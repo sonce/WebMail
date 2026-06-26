@@ -1,0 +1,37 @@
+@page
+@using WebMail.Domain
+@model WebMail.Pages.Admin.BuyersModel
+@{
+    ViewData["Title"] = "买家列表（管理员）";
+}
+
+<h1 class="display-6">买家列表（管理员）</h1>
+
+@if (Model.Buyers.Count == 0)
+{
+    <p>暂无买家。</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>卡密</th>
+                <th>授权状态</th>
+                <th>供应商处理状态</th>
+                <th>创建时间</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var buyer in Model.Buyers)
+            {
+                <tr>
+                    <td>@buyer.CardNo</td>
+                    <td>@buyer.EmailStatus</td>
+                    <td>@buyer.SupplierStatus</td>
+                    <td>@buyer.CreatedAt</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

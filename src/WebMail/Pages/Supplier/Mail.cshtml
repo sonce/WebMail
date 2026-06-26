@@ -1,0 +1,39 @@
+@page
+@using WebMail.Domain
+@model WebMail.Pages.Supplier.MailModel
+@{
+    ViewData["Title"] = "买家邮件";
+}
+
+<h1 class="display-6">买家邮件</h1>
+
+<p><strong>同步窗口到期时间：</strong>@Model.ActiveWindowExpiresAt</p>
+
+<p><a class="btn btn-secondary btn-sm" asp-page="Buyers">返回列表</a></p>
+
+@if (Model.Messages.Count == 0)
+{
+    <p>暂无邮件。</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>发件人</th>
+                <th>主题</th>
+                <th>发送时间</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var message in Model.Messages)
+            {
+                <tr>
+                    <td>@message.Sender</td>
+                    <td>@message.Subject</td>
+                    <td>@message.SentAt</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
