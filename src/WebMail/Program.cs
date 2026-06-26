@@ -15,7 +15,8 @@ builder.Services.AddDbContext<WebMailDbContext>(options =>
 builder.Services.AddScoped<BuyerRuleService>();
 builder.Services.AddSingleton<CardGenerationService>();
 builder.Services.AddSingleton<MailSyncPlanner>();
-builder.Services.AddScoped<IEmailProvider, GmailProvider>();
+builder.Services.AddHttpClient<GmailProvider>();
+builder.Services.AddScoped<IEmailProvider>(sp => sp.GetRequiredService<GmailProvider>());
 builder.Services.AddHttpClient<OutlookProvider>();
 builder.Services.AddScoped<IEmailProvider>(provider => provider.GetRequiredService<OutlookProvider>());
 builder.Services.AddScoped<IEmailProviderResolver, EmailProviderResolver>();
