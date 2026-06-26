@@ -1,0 +1,65 @@
+@page
+@using WebMail.Domain
+@model WebMail.Pages.Buyer.EmailModel
+@{
+    ViewData["Title"] = "我的邮箱";
+}
+
+<h1 class="display-6">我的邮箱</h1>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-warning" role="alert">@Model.ErrorMessage</div>
+}
+
+@if (!string.IsNullOrEmpty(Model.Card))
+{
+    <dl class="row">
+        <dt class="col-sm-3">卡密状态</dt>
+        <dd class="col-sm-9">@Model.CardStatus</dd>
+        <dt class="col-sm-3">授权状态</dt>
+        <dd class="col-sm-9">@Model.EmailStatus</dd>
+    </dl>
+
+    @if (Model.EmailAccount is null)
+    {
+        <div class="alert alert-secondary" role="alert">未授权邮箱</div>
+    }
+    else
+    {
+        <p><strong>已绑定邮箱：</strong>@Model.EmailAccount.Email</p>
+
+        <form method="post" asp-page-handler="Unlink">
+            <input type="hidden" name="card" value="@Model.Card" />
+            <button type="submit" class="btn btn-danger">解绑邮箱</button>
+        </form>
+
+        <h2 class="h5 mt-4">邮件记录</h2>
+        @if (Model.Messages.Count == 0)
+        {
+            <p>暂无邮件。</p>
+        }
+        else
+        {
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>发件人</th>
+                        <th>主题</th>
+                        <th>发送时间</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var message in Model.Messages)
+                    {
+                        <tr>
+                            <td>@message.Sender</td>
+                            <td>@message.Subject</td>
+                            <td>@message.SentAt</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+}

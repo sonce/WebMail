@@ -1,0 +1,13 @@
+@page
+@model WebMail.Pages.Buyer.VerifyModel
+@{
+    ViewData["Title"] = "验证卡密";
+}
+
+<div class="text-center">
+    <h1 class="display-6">验证卡密</h1>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+    }
+</div>
