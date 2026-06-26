@@ -1,10 +1,11 @@
-using Microsoft.EntityFrameworkCore;
 using WebMail.Data;
-using WebMail.Domain;
 
 namespace WebMail.Services.Background;
 
-public sealed class MailSyncBackgroundService(IServiceScopeFactory scopeFactory, ILogger<MailSyncBackgroundService> logger) : BackgroundService
+public sealed class MailSyncBackgroundService(
+    IServiceScopeFactory scopeFactory,
+    MailSyncJobQueueService queueService,
+    ILogger<MailSyncBackgroundService> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -18,11 +19,11 @@ public sealed class MailSyncBackgroundService(IServiceScopeFactory scopeFactory,
         {
             using var scope = scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<WebMailDbContext>();
+            var processor = scope.ServiceProvider.GetRequiredService<MailSyncProcessor>();
             var now = DateTimeOffset.UtcNow;
-            var activeBuyerIds = await db.ActiveSyncWindows.Where(x => x.ExpiresAt > now).Select(x => x.BuyerId).ToListAsync(cancellationToken);
-            foreach (var buyerId in activeBuyerIds) db.SyncJobs.Add(new SyncJob { BuyerId = buyerId, Status = SyncJobStatus.Pending });
-            await db.SaveChangesAsync(cancellationToken);
-            logger.LogInformation("Queued {Count} active buyer sync jobs", activeBuyerIds.Count);
+            var queued = await queueService.QueueActiveWindowJobsAsync(db, now, cancellationToken);
+            var processed = await processor.ProcessPendingAsync(db, now, cancellationToken);
+            logger.LogInformation("Queued {Queued} and processed {Processed} sync jobs", queued, processed);
         }
         catch (Exception ex)
         {
