@@ -34,7 +34,7 @@ public sealed class MailSyncProcessor(IEmailProviderResolver providers, IConfigu
             try
             {
                 var account = await db.EmailAccounts.FirstOrDefaultAsync(x => x.BuyerId == job.BuyerId, cancellationToken);
-                if (account is not null)
+                if (account is not null && allowedSenders.Count > 0)
                 {
                     var provider = providers.Resolve(account.Provider);
                     var messages = await provider.FetchMessagesAsync(account.EncryptedRefreshToken, allowedSenders, since, cancellationToken);
@@ -43,6 +43,10 @@ public sealed class MailSyncProcessor(IEmailProviderResolver providers, IConfigu
 
                 job.Status = SyncJobStatus.Succeeded;
                 job.CompletedAt = now;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {

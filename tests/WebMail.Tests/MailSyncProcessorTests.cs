@@ -75,6 +75,38 @@ public sealed class MailSyncProcessorTests
         Assert.Equal("boom", job.Error);
     }
 
+    [Fact]
+    public async Task ProcessPendingMarksJobSucceededWhenBuyerHasNoAccount()
+    {
+        await using var db = CreateDb();
+        db.AllowedSenders.Add(new AllowedSender { EmailAddress = "orders@example.com" });
+        db.SyncJobs.Add(new SyncJob { BuyerId = 99, Status = SyncJobStatus.Pending });
+        await db.SaveChangesAsync();
+
+        var processor = CreateProcessor(new FakeProvider("Fake", []));
+
+        await processor.ProcessPendingAsync(db, DateTimeOffset.UtcNow, CancellationToken.None);
+
+        Assert.Equal(SyncJobStatus.Succeeded, (await db.SyncJobs.SingleAsync()).Status);
+        Assert.Empty(await db.EmailMessages.ToListAsync());
+    }
+
+    [Fact]
+    public async Task ProcessPendingSkipsFetchWhenNoAllowedSenders()
+    {
+        await using var db = CreateDb();
+        SeedAccountWithoutAllowedSenders(db, buyerId: 1, accountId: 1, provider: "Boom");
+        db.SyncJobs.Add(new SyncJob { BuyerId = 1, Status = SyncJobStatus.Pending });
+        await db.SaveChangesAsync();
+
+        var processor = CreateProcessor(new ThrowingProvider("Boom"));
+
+        await processor.ProcessPendingAsync(db, DateTimeOffset.UtcNow, CancellationToken.None);
+
+        Assert.Equal(SyncJobStatus.Succeeded, (await db.SyncJobs.SingleAsync()).Status);
+        Assert.Empty(await db.EmailMessages.ToListAsync());
+    }
+
     private static MailSyncProcessor CreateProcessor(IEmailProvider provider)
     {
         var resolver = new EmailProviderResolver([provider]);
@@ -87,6 +119,15 @@ public sealed class MailSyncProcessorTests
     private static void SeedAccount(WebMailDbContext db, long buyerId, long accountId, string provider)
     {
         db.AllowedSenders.Add(new AllowedSender { EmailAddress = "orders@example.com" });
+        db.EmailAccounts.Add(new EmailAccount
+        {
+            Id = accountId, BuyerId = buyerId, Email = "buyer@example.com",
+            Provider = provider, ProviderUserId = "p", EncryptedRefreshToken = "token"
+        });
+    }
+
+    private static void SeedAccountWithoutAllowedSenders(WebMailDbContext db, long buyerId, long accountId, string provider)
+    {
         db.EmailAccounts.Add(new EmailAccount
         {
             Id = accountId, BuyerId = buyerId, Email = "buyer@example.com",

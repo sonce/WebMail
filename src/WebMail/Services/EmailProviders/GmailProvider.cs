@@ -17,8 +17,8 @@ public sealed class GmailProvider(IConfiguration configuration, HttpClient httpC
 
     public OAuthStartResult BuildAuthorizationUrl(string cardNo)
     {
-        var clientId = configuration["GoogleOAuth:ClientId"] ?? string.Empty;
-        var redirectUri = Uri.EscapeDataString(configuration["GoogleOAuth:RedirectUri"] ?? string.Empty);
+        var clientId = RequiredConfig("GoogleOAuth:ClientId");
+        var redirectUri = Uri.EscapeDataString(RequiredConfig("GoogleOAuth:RedirectUri"));
         var state = cardNo;
         var scope = Uri.EscapeDataString("https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email");
         var url = $"https://accounts.google.com/o/oauth2/v2/auth?client_id={clientId}&redirect_uri={redirectUri}&response_type=code&scope={scope}&access_type=offline&prompt=consent&state={Uri.EscapeDataString(state)}";
@@ -35,7 +35,7 @@ public sealed class GmailProvider(IConfiguration configuration, HttpClient httpC
             ["redirect_uri"] = RequiredConfig("GoogleOAuth:RedirectUri"),
             ["grant_type"] = "authorization_code"
         }), cancellationToken);
-        tokenResponse.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(tokenResponse, "Google token exchange", cancellationToken);
 
         using var tokenPayload = await JsonDocument.ParseAsync(await tokenResponse.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
         var tokenRoot = tokenPayload.RootElement;
@@ -50,7 +50,7 @@ public sealed class GmailProvider(IConfiguration configuration, HttpClient httpC
         using var userRequest = new HttpRequestMessage(HttpMethod.Get, "https://openidconnect.googleapis.com/v1/userinfo");
         userRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         using var userResponse = await httpClient.SendAsync(userRequest, cancellationToken);
-        userResponse.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(userResponse, "Google userinfo", cancellationToken);
 
         using var userPayload = await JsonDocument.ParseAsync(await userResponse.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
         var userRoot = userPayload.RootElement;
@@ -199,4 +199,11 @@ public sealed class GmailProvider(IConfiguration configuration, HttpClient httpC
 
     private string RequiredConfig(string key) =>
         configuration[key] ?? throw new InvalidOperationException($"{key} is required for Gmail OAuth.");
+
+    private static async Task EnsureSuccessOrThrowAsync(HttpResponseMessage response, string context, CancellationToken cancellationToken)
+    {
+        if (response.IsSuccessStatusCode) return;
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        throw new InvalidOperationException($"{context} failed: {(int)response.StatusCode} {response.ReasonPhrase}. {body}");
+    }
 }

@@ -52,6 +52,10 @@ public sealed class CallbackModel(
             return Page();
         }
 
+        var isNewOrChangedAccount = existing is null
+            || !string.Equals(existing.Provider, emailProvider.Name, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(existing.Email, authorization.Email, StringComparison.OrdinalIgnoreCase);
+
         if (existing is null)
         {
             db.EmailAccounts.Add(new EmailAccount
@@ -72,7 +76,10 @@ public sealed class CallbackModel(
         }
 
         buyer.CardStatus = CardStatus.Authorized;
-        buyer.EmailStatus = EmailAuthorizationStatus.PendingReview;
+        if (isNewOrChangedAccount)
+        {
+            buyer.EmailStatus = EmailAuthorizationStatus.PendingReview;
+        }
         await db.SaveChangesAsync(cancellationToken);
 
         return Page();

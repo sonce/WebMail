@@ -19,8 +19,8 @@ public sealed class OutlookProvider(IConfiguration configuration, HttpClient htt
         var state = cardNo;
         var query = new Dictionary<string, string?>
         {
-            ["client_id"] = configuration["OutlookOAuth:ClientId"] ?? string.Empty,
-            ["redirect_uri"] = configuration["OutlookOAuth:RedirectUri"] ?? string.Empty,
+            ["client_id"] = RequiredConfig("OutlookOAuth:ClientId"),
+            ["redirect_uri"] = RequiredConfig("OutlookOAuth:RedirectUri"),
             ["response_type"] = "code",
             ["scope"] = Scope,
             ["response_mode"] = "query",
@@ -46,7 +46,7 @@ public sealed class OutlookProvider(IConfiguration configuration, HttpClient htt
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
 
         using var response = await httpClient.SendAsync(request, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, "Microsoft Graph /me", cancellationToken);
 
         using var payload = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
         var root = payload.RootElement;
@@ -150,7 +150,7 @@ public sealed class OutlookProvider(IConfiguration configuration, HttpClient htt
     private async Task<TokenResult> RequestTokenAsync(Dictionary<string, string> form, CancellationToken cancellationToken)
     {
         using var response = await httpClient.PostAsync(TokenEndpoint, new FormUrlEncodedContent(form), cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, "Microsoft token request", cancellationToken);
 
         using var payload = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
         var root = payload.RootElement;
@@ -189,6 +189,13 @@ public sealed class OutlookProvider(IConfiguration configuration, HttpClient htt
 
     private string RequiredConfig(string key) =>
         configuration[key] ?? throw new InvalidOperationException($"{key} is required for Outlook OAuth.");
+
+    private static async Task EnsureSuccessOrThrowAsync(HttpResponseMessage response, string context, CancellationToken cancellationToken)
+    {
+        if (response.IsSuccessStatusCode) return;
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        throw new InvalidOperationException($"{context} failed: {(int)response.StatusCode} {response.ReasonPhrase}. {body}");
+    }
 
     private static string? ReadString(JsonElement element, string propertyName) =>
         element.TryGetProperty(propertyName, out var value) && value.ValueKind != JsonValueKind.Null ? value.GetString() : null;
