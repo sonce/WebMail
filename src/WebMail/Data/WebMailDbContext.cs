@@ -23,5 +23,6 @@ public sealed class WebMailDbContext(DbContextOptions<WebMailDbContext> options)
         modelBuilder.Entity<EmailMessage>().HasIndex(x => new { x.EmailAccountId, x.ProviderMessageId }).IsUnique();
         modelBuilder.Entity<AllowedSender>().HasIndex(x => x.EmailAddress).IsUnique();
         modelBuilder.Entity<BuyerSupplierAssignment>().HasIndex(x => x.BuyerId).IsUnique();
+        modelBuilder.Entity<ActiveSyncWindow>().HasIndex(x => x.BuyerId).IsUnique();
     }
 }

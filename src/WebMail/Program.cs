@@ -27,6 +27,11 @@ builder.Services.AddAuthorization(options =>
 
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment())
+{
+    app.Logger.LogWarning("Database is not auto-initialized (migrations deferred). DB-backed pages and the mail sync tick will fail until migrations/EnsureCreated are added.");
+}
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {

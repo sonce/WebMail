@@ -41,10 +41,7 @@ public class EmailModel : PageModel
         EmailAccount = await _db.EmailAccounts.FirstOrDefaultAsync(a => a.BuyerId == buyer.Id);
         if (EmailAccount is not null)
         {
-            Messages = await _db.EmailMessages
-                .Where(m => m.EmailAccountId == EmailAccount.Id)
-                .OrderByDescending(m => m.SentAt)
-                .ToListAsync();
+            Messages = await LoadMessagesAsync(EmailAccount.Id);
         }
 
         return Page();
@@ -101,10 +98,7 @@ public class EmailModel : PageModel
         EmailAccount = account;
         if (account is not null)
         {
-            Messages = await _db.EmailMessages
-                .Where(m => m.EmailAccountId == account.Id)
-                .OrderByDescending(m => m.SentAt)
-                .ToListAsync();
+            Messages = await LoadMessagesAsync(account.Id);
         }
         else
         {
@@ -113,4 +107,10 @@ public class EmailModel : PageModel
 
         return Page();
     }
+
+    private Task<List<EmailMessage>> LoadMessagesAsync(long emailAccountId) =>
+        _db.EmailMessages
+            .Where(m => m.EmailAccountId == emailAccountId)
+            .OrderByDescending(m => m.SentAt)
+            .ToListAsync();
 }

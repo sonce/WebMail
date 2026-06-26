@@ -14,12 +14,19 @@ public sealed class MailSyncBackgroundService(IServiceScopeFactory scopeFactory,
 
     private async Task TickAsync(CancellationToken cancellationToken)
     {
-        using var scope = scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<WebMailDbContext>();
-        var now = DateTimeOffset.UtcNow;
-        var activeBuyerIds = await db.ActiveSyncWindows.Where(x => x.ExpiresAt > now).Select(x => x.BuyerId).ToListAsync(cancellationToken);
-        foreach (var buyerId in activeBuyerIds) db.SyncJobs.Add(new SyncJob { BuyerId = buyerId, Status = SyncJobStatus.Pending });
-        await db.SaveChangesAsync(cancellationToken);
-        logger.LogInformation("Queued {Count} active buyer sync jobs", activeBuyerIds.Count);
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<WebMailDbContext>();
+            var now = DateTimeOffset.UtcNow;
+            var activeBuyerIds = await db.ActiveSyncWindows.Where(x => x.ExpiresAt > now).Select(x => x.BuyerId).ToListAsync(cancellationToken);
+            foreach (var buyerId in activeBuyerIds) db.SyncJobs.Add(new SyncJob { BuyerId = buyerId, Status = SyncJobStatus.Pending });
+            await db.SaveChangesAsync(cancellationToken);
+            logger.LogInformation("Queued {Count} active buyer sync jobs", activeBuyerIds.Count);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Mail sync tick failed");
+        }
     }
 }
