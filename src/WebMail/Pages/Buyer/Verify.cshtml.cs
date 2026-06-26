@@ -33,11 +33,6 @@ public class VerifyModel : PageModel
             return Page();
         }
 
-        if (buyer.SaleId is null && saleid.HasValue)
-        {
-            buyer.SaleId = saleid;
-        }
-
         if (buyer.CardStatus == CardStatus.Unused)
         {
             buyer.CardStatus = CardStatus.Entered;

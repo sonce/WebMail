@@ -39,10 +39,6 @@ public class EmailModel : PageModel
         EmailStatus = buyer.EmailStatus;
 
         EmailAccount = await _db.EmailAccounts.FirstOrDefaultAsync(a => a.BuyerId == buyer.Id);
-        if (EmailAccount is not null)
-        {
-            Messages = await LoadMessagesAsync(EmailAccount.Id);
-        }
 
         return Page();
     }
@@ -96,21 +92,8 @@ public class EmailModel : PageModel
         CardStatus = buyer.CardStatus;
         EmailStatus = buyer.EmailStatus;
         EmailAccount = account;
-        if (account is not null)
-        {
-            Messages = await LoadMessagesAsync(account.Id);
-        }
-        else
-        {
-            Messages = Array.Empty<EmailMessage>();
-        }
+        Messages = Array.Empty<EmailMessage>();
 
         return Page();
     }
-
-    private Task<List<EmailMessage>> LoadMessagesAsync(long emailAccountId) =>
-        _db.EmailMessages
-            .Where(m => m.EmailAccountId == emailAccountId)
-            .OrderByDescending(m => m.SentAt)
-            .ToListAsync();
 }

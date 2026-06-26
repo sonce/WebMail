@@ -24,6 +24,10 @@
     @if (Model.EmailAccount is null)
     {
         <div class="alert alert-secondary" role="alert">未授权邮箱</div>
+        <div class="d-flex gap-2">
+            <a class="btn btn-primary" asp-page="/OAuth/Start" asp-route-provider="Gmail" asp-route-card="@Model.Card">授权 Gmail</a>
+            <a class="btn btn-outline-primary" asp-page="/OAuth/Start" asp-route-provider="Outlook" asp-route-card="@Model.Card">授权 Outlook</a>
+        </div>
     }
     else
     {
@@ -34,32 +38,5 @@
             <button type="submit" class="btn btn-danger">解绑邮箱</button>
         </form>
 
-        <h2 class="h5 mt-4">邮件记录</h2>
-        @if (Model.Messages.Count == 0)
-        {
-            <p>暂无邮件。</p>
-        }
-        else
-        {
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>发件人</th>
-                        <th>主题</th>
-                        <th>发送时间</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var message in Model.Messages)
-                    {
-                        <tr>
-                            <td>@message.Sender</td>
-                            <td>@message.Subject</td>
-                            <td>@message.SentAt</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        }
     }
 }

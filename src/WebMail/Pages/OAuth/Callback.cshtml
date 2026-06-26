@@ -1,0 +1,21 @@
+@page
+@model WebMail.Pages.OAuth.CallbackModel
+@{
+    ViewData["Title"] = "邮箱授权";
+}
+
+<h1 class="display-6">邮箱授权</h1>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-warning" role="alert">@Model.ErrorMessage</div>
+}
+else
+{
+    <div class="alert alert-success" role="alert">授权成功，等待管理员审核。</div>
+}
+
+@if (!string.IsNullOrEmpty(Model.Card))
+{
+    <a class="btn btn-primary" asp-page="/Buyer/Email" asp-route-card="@Model.Card">返回邮箱状态</a>
+}
