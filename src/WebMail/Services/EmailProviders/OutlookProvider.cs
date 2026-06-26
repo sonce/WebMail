@@ -77,9 +77,21 @@ public sealed class OutlookProvider(IConfiguration configuration, HttpClient htt
             ["scope"] = Scope
         }, cancellationToken);
 
-        var url = BuildMessagesUrl(allowedSenders, since);
+        var folders = new[] { ("inbox", MailFolder.Inbox), ("junkemail", MailFolder.Junk) };
+        var results = new List<ProviderMessage>();
+        foreach (var (folder, mailFolder) in folders)
+        {
+            results.AddRange(await FetchFolderAsync(token.AccessToken, folder, mailFolder, allowedSenders, since, cancellationToken));
+        }
+
+        return results;
+    }
+
+    private async Task<IReadOnlyList<ProviderMessage>> FetchFolderAsync(string accessToken, string folder, MailFolder mailFolder, IReadOnlyCollection<string> allowedSenders, DateTimeOffset? since, CancellationToken cancellationToken)
+    {
+        var url = BuildFolderMessagesUrl(folder, allowedSenders, since);
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
         using var response = await httpClient.SendAsync(request, cancellationToken);
@@ -91,10 +103,10 @@ public sealed class OutlookProvider(IConfiguration configuration, HttpClient htt
             return [];
         }
 
-        return messages.EnumerateArray().Select(m => MapMessage(m, MailFolder.Inbox)).ToArray();
+        return messages.EnumerateArray().Select(m => MapMessage(m, mailFolder)).ToArray();
     }
 
-    private string BuildMessagesUrl(IReadOnlyCollection<string> allowedSenders, DateTimeOffset? since)
+    internal static string BuildFolderMessagesUrl(string folder, IReadOnlyCollection<string> allowedSenders, DateTimeOffset? since)
     {
         var filters = new List<string>();
         var senderFilter = BuildSenderFilter(allowedSenders);
@@ -120,7 +132,7 @@ public sealed class OutlookProvider(IConfiguration configuration, HttpClient htt
             query["$filter"] = string.Join(" and ", filters);
         }
 
-        return Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString($"{GraphEndpoint}/me/messages", query);
+        return Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString($"{GraphEndpoint}/me/mailFolders/{folder}/messages", query);
     }
 
     private static string BuildSenderFilter(IReadOnlyCollection<string> allowedSenders)
