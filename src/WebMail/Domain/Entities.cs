@@ -37,6 +37,7 @@ public sealed class EmailAccount
 public sealed class EmailMessage
 {
     public long Id { get; set; }
+    public long BuyerId { get; set; }
     public long EmailAccountId { get; set; }
     public string ProviderMessageId { get; set; } = string.Empty;
     public string? ProviderThreadId { get; set; }
@@ -47,6 +48,7 @@ public sealed class EmailMessage
     public string? TextBody { get; set; }
     public string? HtmlBody { get; set; }
     public string? AttachmentMetadataJson { get; set; }
+    public MailFolder Folder { get; set; } = MailFolder.Inbox;
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
