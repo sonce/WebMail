@@ -1,0 +1,18 @@
+# .NET build output
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+
+# Local SQLite dev databases
+*.db
+*.db-shm
+*.db-wal
+
+# User-specific / IDE
+*.user
+.vs/
+.idea/
+
+# SDD scratch (workflow scaffolding)
+.superpowers/
