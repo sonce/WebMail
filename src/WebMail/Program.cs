@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using WebMail.Data;
 using WebMail.Services;
+using WebMail.Services.EmailProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,7 @@ builder.Services.AddDbContext<WebMailDbContext>(options =>
 builder.Services.AddScoped<BuyerRuleService>();
 builder.Services.AddSingleton<CardGenerationService>();
 builder.Services.AddSingleton<MailSyncPlanner>();
+builder.Services.AddScoped<IEmailProvider, GmailProvider>();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options => { options.LoginPath = "/Login"; options.AccessDeniedPath = "/AccessDenied"; });
 builder.Services.AddAuthorization(options =>
 {
