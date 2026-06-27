@@ -26,7 +26,7 @@ public static class AuthRouting
         }
         if (url.Length > 1 && url[0] == '~' && url[1] == '/')
         {
-            return true;
+            return url.Length == 2 || (url[2] != '/' && url[2] != '\\');
         }
         return false;
     }
