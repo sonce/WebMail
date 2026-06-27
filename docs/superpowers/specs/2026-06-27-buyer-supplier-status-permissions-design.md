@@ -5,141 +5,164 @@
 
 ## Goal
 
-Make what a **buyer** may do, and what a **sales** user may delete, depend on where the buyer sits in the supplier-processing lifecycle. Concretely:
+Make what a **buyer** may do, and what a **sales** user may delete, depend on where the buyer sits in the review + supplier-processing lifecycle. Concretely:
 
 - When a supplier marks a buyer **Failed**, the buyer may **change email** (re-bind a different mailbox).
-- When a supplier marks a buyer **Completed**, the buyer may **only clear authorization** — and once cleared, this is terminal (no re-binding).
-- A **sales** user may delete buyers that are **Failed** or **Completed**, plus buyers still in early, un-locked states; they may not delete buyers that are locked (admin-approved, supplier still processing).
+- When a supplier marks a buyer **Completed**, the buyer may **only clear authorization**; once cleared, this is terminal (no re-binding).
+- A **sales** user may delete buyers that are Failed or Completed, plus buyers still in early, un-locked states; they may not delete buyers that are locked (approved, supplier still processing) or whose mailbox is in an abnormal (broken-token) state.
+- This requires building the supplier **"set status"** action, which does not exist today.
 
-This also requires building the **supplier "set status" action**, which does not exist today — `SupplierStatus` is currently read-only everywhere.
+## Core Decision: Three Independent Status Fields
+
+The current `EmailAuthorizationStatus { NotAuthorized, PendingReview, Normal, Rejected, Abnormal }` conflates **three different facts** into one field:
+
+- `NotAuthorized` / authorized / `Abnormal` — about the **mailbox** (is it authorized; is the token still valid).
+- `PendingReview` / `Normal` / `Rejected` — about the **administrator reviewing the buyer**, which has nothing to do with the mailbox.
+- (supplier processing already lives separately in `SupplierStatus`.)
+
+Mixing them is what forced the awkward "remember the previous status" workaround for token failures: when a token broke, `Abnormal` overwrote the review state, losing it.
+
+We split these into **three independent, single-owner status fields**. They store three *different* facts, so this is not redundant state — each is the single source of truth for its own concern, and the buyer's review position is never disturbed by a mailbox problem.
+
+| Field | Owner | Concern | Values |
+|---|---|---|---|
+| **`EmailStatus`** (邮箱状态) | buyer (authorize) + system (token health) | mailbox authorization & health | `NotAuthorized` / `Authorized` / `Abnormal` |
+| **`BuyerStatus`** (买家状态) | administrator (review) | review of the buyer | `NotSubmitted` / `PendingReview` / `Approved` / `Rejected` |
+| **`SupplierStatus`** (供应商状态) | supplier | processing decision | `Unprocessed` / `Failed` / `Completed` |
+
+Because mailbox health is now its own field, a broken token only sets `EmailStatus = Abnormal`; `BuyerStatus` (`PendingReview` or `Approved`) is untouched, and re-authorizing the same mailbox simply sets `EmailStatus = Authorized` again. **No `PreAbnormalEmailStatus` field is needed.** The earlier "待审核 buyer whose token breaks" case is correct by construction: its `BuyerStatus` stays `PendingReview` throughout.
+
+"What the buyer/sales/supplier may do" is **computed** from these three fields (see rules below); it is not a fourth stored status.
 
 ## Verified Current State (pre-work)
 
-- `Buyer` (`Domain/Entities.cs`) has three stored status fields: `CardStatus`, `EmailStatus` (`EmailAuthorizationStatus`), `SupplierStatus` (`SupplierProcessingStatus`), plus `IsDeleted`.
-- `SupplierProcessingStatus { Unprocessed = 1, Failed = 2, Completed = 3 }` is **displayed read-only** on the supplier and admin buyer lists. **No handler lets a supplier set it.**
-- `EmailAuthorizationStatus { NotAuthorized, PendingReview, Normal, Rejected, Abnormal }`. **`Abnormal` is currently never assigned anywhere in source code** — it is defined in the enum and referenced only in a test. It is intended for a future failure path (token refresh fails / permission revoked / provider auth error). Because nothing sets it yet, its origin state is not fixed to `Normal`; a token can conceptually break while a mailbox is still `PendingReview` (buyer revokes access before admin review).
-- `BuyerRuleService.cs` keys all current rules off `EmailStatus` only:
-  - `CanBuyerUnlink` allows unlink when `EmailStatus ∈ {NotAuthorized, PendingReview, Rejected}`.
-  - `CanSalesDeleteBuyer` allows delete when the sales user owns the buyer and `EmailStatus ∈ {NotAuthorized, PendingReview, Rejected}`.
-  - `CanSupplierViewBuyer` allows view when `EmailStatus == Normal` and the buyer is assigned to that supplier.
-- Buyer's only mailbox action today is **解绑邮箱 (unlink)** on `Pages/Buyer/Email.cshtml`, handled by `OnPostUnlinkAsync`. There is no separate "change email"; changing happens implicitly via OAuth re-auth in `Pages/OAuth/Callback.cshtml.cs`.
-- The OAuth callback blocks replacing an existing account unless `CanBuyerUnlink` permits it, and sets `EmailStatus = PendingReview` only for a new/changed account.
+- `Buyer` (`Domain/Entities.cs`) currently has `CardStatus`, `EmailStatus` (`EmailAuthorizationStatus`), `SupplierStatus` (`SupplierProcessingStatus`), `IsDeleted`.
+- `SupplierProcessingStatus { Unprocessed = 1, Failed = 2, Completed = 3 }` is **displayed read-only**; no handler lets a supplier set it.
+- The old `EmailAuthorizationStatus.Abnormal` is **never assigned anywhere in source** — defined in the enum, referenced only in a test. Splitting the enum is therefore low-risk.
+- The administrator **review** transition (`PendingReview → Normal/Rejected`) is **also unimplemented** — `Admin/Buyers.cshtml` is a read-only list and nothing sets `Normal`. Because `BuyerStatus = Approved` is the precondition for the supplier action, a minimal admin **approve/reject** handler is included in scope (see below).
+- `BuyerRuleService.cs` rules currently key off the old `EmailStatus` only.
+- Buyer's only mailbox action today is **解绑邮箱 (unlink)** (`OnPostUnlinkAsync`). Email change happens implicitly via OAuth re-auth in `OAuth/Callback.cshtml.cs`.
+- DB init is deferred (no live schema/migrations), so the enum split and new field have no historical-data impact.
 
-## Decision: Buyer Status Is a Derived Property
+## Enum Changes
 
-The buyer's lifecycle stage ("待授权 / 处理中 / 失败 / 完成 / …") is a **single source-of-truth concern**, not a third stored column. It is computed from `(EmailStatus, SupplierStatus, IsDeleted)` because each meaningful combination maps to exactly one buyer status. Storing it would create redundant state that must be re-synced on every email/supplier change and could drift.
+Replace the single combined enum with two:
 
-`EmailStatus` and `SupplierStatus` remain the two **stored** fields, each with a clear owner:
+```csharp
+// 邮箱状态 — mailbox authorization & health
+public enum EmailAuthorizationStatus { NotAuthorized = 1, Authorized = 2, Abnormal = 3 }
 
-- `EmailStatus` — owned by the buyer (authorize/clear) and the administrator (approve/reject).
-- `SupplierStatus` — owned by the supplier (mark failed/completed).
+// 买家状态 — administrator review of the buyer
+public enum BuyerStatus { NotSubmitted = 1, PendingReview = 2, Approved = 3, Rejected = 4 }
 
-One additional stored field is required: `PreAbnormalEmailStatus` (nullable). It records the `EmailStatus` a mailbox held immediately before transitioning to `Abnormal`, so a same-mailbox re-authorization can restore the exact prior state (see Abnormal recovery). It is null except while a buyer is `Abnormal`.
-
-`BuyerStatus` is exposed as a computed enum used by both the UI (a clear "买家状态" column) and the rule service (to gate actions).
-
-## Buyer Status Derivation
-
-```
-ResolveBuyerStatus(buyer):
-  IsDeleted                                   -> Deleted
-  EmailStatus == Abnormal                     -> Abnormal
-  EmailStatus == Normal & Supplier Unprocessed-> Processing      (locked)
-  EmailStatus == Normal & Supplier Failed     -> Failed
-  EmailStatus == Normal & Supplier Completed  -> Completed
-  EmailStatus == NotAuthorized & Completed    -> ClearedTerminal (terminal)
-  EmailStatus == NotAuthorized                -> NeedAuthorization
-  EmailStatus == PendingReview                -> PendingReview
-  EmailStatus == Rejected                     -> Rejected
+// 供应商状态 — unchanged
+public enum SupplierProcessingStatus { Unprocessed = 1, Failed = 2, Completed = 3 }
 ```
 
-`ClearedTerminal` is uniquely reachable: a supplier can set `Completed` only while `EmailStatus == Normal`, so `(NotAuthorized, Completed)` can arise **only** via the Completed → clear path. The `(NotAuthorized, Failed)` combination never occurs because "change email" resets `SupplierStatus` to `Unprocessed` (see below).
+`Buyer` gains a `BuyerStatus BuyerStatus` property; `EmailStatus` keeps its name with the new value set. Old-value mapping:
 
-## Buyer Actions Per Status
-
-| BuyerStatus | Buyer may | Backend behavior |
+| Old `EmailAuthorizationStatus` | New `EmailStatus` | New `BuyerStatus` |
 |---|---|---|
-| NeedAuthorization | **Authorize** | Show provider buttons → OAuth → `EmailStatus = PendingReview` |
-| PendingReview | manage (existing) | Pre-review: existing unlink/re-auth behavior preserved |
-| Rejected | **Re-authorize** | Existing manage behavior |
-| **Abnormal** | **Re-authorize (same mailbox)** or **Change email** | See Abnormal recovery below |
-| **Processing** | **nothing (locked)** | Page shows "审核已通过，处理中"; no action buttons |
-| **Failed** | **Change email** | Clear current account → reset to `NotAuthorized` + `Unprocessed` → provider buttons → re-auth → `PendingReview` |
-| **Completed** | **Clear authorization** | Remove account → `EmailStatus = NotAuthorized`, **keep `SupplierStatus = Completed`** → becomes `ClearedTerminal` |
-| **ClearedTerminal** | nothing | Page shows "已完成，授权已清空"; no authorize entry |
-| Deleted | n/a | — |
+| NotAuthorized | NotAuthorized | NotSubmitted |
+| PendingReview | Authorized | PendingReview |
+| Normal | Authorized | Approved |
+| Rejected | Authorized | Rejected |
+| Abnormal | Abnormal | (preserved, e.g. PendingReview / Approved) |
 
-### Change email (Failed, and Abnormal)
+## Lifecycle Transitions
 
-`OnPostChangeEmail`: removes the current `EmailAccount`, sets `EmailStatus = NotAuthorized` and `SupplierStatus = Unprocessed`, preserves `EmailMessage` rows for audit, redirects back to the Email page — which now shows provider buttons. The buyer then runs the normal OAuth flow, ending in `PendingReview`. Because the account is removed *before* re-auth, the existing callback replacement guard is never triggered, so no callback change is needed for this path.
+- **Card created:** `EmailStatus=NotAuthorized`, `BuyerStatus=NotSubmitted`, `SupplierStatus=Unprocessed`.
+- **Buyer authorizes a mailbox (OAuth success, new binding):** `EmailStatus=Authorized`, `BuyerStatus=PendingReview`.
+- **Admin reviews:** approve → `BuyerStatus=Approved`; reject → `BuyerStatus=Rejected`.
+- **Supplier (only when `Approved` + `Authorized`) sets:** `SupplierStatus=Failed` or `Completed`; may switch between the two.
+- **Token breaks (future detector):** `EmailStatus=Abnormal` (other two fields untouched).
 
-### Clear authorization (Completed)
+## Buyer Actions (computed)
 
-`OnPostClearAuth`: removes the current `EmailAccount`, sets `EmailStatus = NotAuthorized`, **leaves `SupplierStatus = Completed`**, preserves `EmailMessage` rows. The buyer becomes `ClearedTerminal`; the Email page renders a terminal message and offers **no** authorize/change entry.
+`ResolveBuyerMailAction(buyer)` returns the allowed action set:
 
-### Abnormal recovery
+| Condition | Buyer may | Backend behavior |
+|---|---|---|
+| `EmailStatus=NotAuthorized` & `BuyerStatus=NotSubmitted` | **Authorize** | provider buttons → OAuth → `Authorized` + `PendingReview` |
+| `EmailStatus=Authorized` & `BuyerStatus=PendingReview` | **Change email** / **Clear auth** (审核前可操作) | as below |
+| `EmailStatus=Authorized` & `BuyerStatus=Rejected` | **Change email** / **Clear auth** | as below |
+| `EmailStatus=Abnormal` | **Re-authorize (same mailbox)** or **Change email** | see below |
+| `BuyerStatus=Approved` & `SupplierStatus=Unprocessed` | **nothing (locked)** | "审核已通过，处理中"; no buttons |
+| `BuyerStatus=Approved` & `SupplierStatus=Failed` | **Change email** | as below |
+| `BuyerStatus=Approved` & `SupplierStatus=Completed` & `EmailStatus=Authorized` | **Clear auth** | as below |
+| `BuyerStatus=Approved` & `SupplierStatus=Completed` & `EmailStatus=NotAuthorized` | nothing (terminal "已完成并清空") | — |
 
-In `Abnormal`, the buyer sees **two** actions:
+### Change email
 
-- **Re-authorize (same mailbox):** re-run OAuth for the existing provider/email, refreshing tokens **without** clearing the binding. On success, `EmailStatus` is restored to `PreAbnormalEmailStatus` (then that field is cleared). This restores the exact prior state for **any** origin — `Normal` → `Normal`, `PendingReview` → `PendingReview`. No assumption that Abnormal came from `Normal`.
-- **Change email:** same as the Failed change-email flow (clear → choose provider → re-auth → `PendingReview`); `PreAbnormalEmailStatus` is cleared because the binding is discarded.
+Remove the current `EmailAccount`; set `EmailStatus=NotAuthorized`, `BuyerStatus=NotSubmitted`, `SupplierStatus=Unprocessed`; preserve `EmailMessage` rows. Redirect to the Email page (now shows provider buttons) → normal OAuth → `Authorized` + `PendingReview`. Because the account is removed before re-auth, the OAuth callback replacement guard is never hit.
 
-Whatever future code sets `EmailStatus = Abnormal` must first capture the current `EmailStatus` into `PreAbnormalEmailStatus`. The OAuth callback gains a branch: when the current account is `Abnormal` and the completing auth is the **same** provider+email, restore `EmailStatus = PreAbnormalEmailStatus` (recovery) instead of setting `PendingReview`.
+### Clear authorization
+
+Remove the current `EmailAccount`; set `EmailStatus=NotAuthorized`; preserve messages. Two cases differ only in what was already there:
+
+- From `Approved` + `Completed`: `BuyerStatus` stays `Approved`, `SupplierStatus` stays `Completed` → derived terminal "已完成并清空"; page offers no authorize/change entry.
+- From `PendingReview` / `Rejected` (pre-review manage): also reset `BuyerStatus=NotSubmitted`, `SupplierStatus=Unprocessed` → back to start; buyer may authorize again.
+
+### Re-authorize (same mailbox) — Abnormal recovery
+
+Re-run OAuth for the existing provider+email, refreshing tokens **without** clearing the binding. On success `EmailStatus=Authorized`; `BuyerStatus` and `SupplierStatus` are untouched, so the buyer returns to exactly where it was (`PendingReview`→`PendingReview`, `Approved`→`Approved`, including any `SupplierStatus`). Whatever future code sets `Abnormal` only needs to flip `EmailStatus`.
 
 ## Supplier Set Status (new)
 
-On `Pages/Supplier/Buyers.cshtml`, each row gains two POST actions: **标记失败** and **标记完成**.
+On `Pages/Supplier/Buyers.cshtml`, each row gains **标记失败** / **标记完成** POST actions.
 
-- Handler validates: buyer is assigned to the current supplier, `EmailStatus == Normal`, not deleted.
-- Sets `SupplierStatus` to `Failed` or `Completed`.
-- **Can set and can switch** between `Failed` ↔ `Completed` while the buyer is still viewable (`EmailStatus == Normal`, i.e. the buyer has not yet acted). Reverting to `Unprocessed` is out of scope.
+- `CanSupplierSetStatus`: buyer assigned to the current supplier, `BuyerStatus=Approved`, `EmailStatus=Authorized`, not deleted.
+- Sets `SupplierStatus` to `Failed`/`Completed`; may switch between the two while still eligible.
 - Writes an `AuditLog` row.
-- New rule method `CanSupplierSetStatus(buyer, supplierId)` mirrors `CanSupplierViewBuyer`.
 
 ## Sales Delete Rule (changed)
 
-`CanSalesDeleteBuyer(buyer, salesUserId)` becomes, expressed via derived status:
-
 ```
-!IsDeleted
+CanSalesDeleteBuyer(buyer, salesUserId) =
+    !IsDeleted
  && SaleId == salesUserId
- && BuyerStatus ∈ { NeedAuthorization, PendingReview, Rejected,
-                    Failed, Completed, ClearedTerminal }
+ && EmailStatus != Abnormal
+ && !(BuyerStatus == Approved && SupplierStatus == Unprocessed)   // not locked/processing
 ```
 
-Equivalently: deletable unless **Processing** (admin-approved, supplier still working → locked) or **Abnormal** (recoverable broken state). Delete remains a soft delete (`IsDeleted = true`).
+Deletable: `NotSubmitted`, `PendingReview`, `Rejected`, and `Approved`+`Failed`/`Completed` (incl. the cleared-terminal). Blocked: `Approved`+`Unprocessed` (processing) and any `Abnormal`. Soft delete (`IsDeleted = true`).
+
+## Supplier View Rule (updated)
+
+`CanSupplierViewBuyer`: assigned to this supplier, not deleted, `BuyerStatus=Approved`, `EmailStatus=Authorized`. (Replaces the old `EmailStatus==Normal` check.)
+
+## Admin Review (minimal, in scope — prerequisite for Approved)
+
+On `Pages/Admin/Buyers.cshtml`, add **通过** / **拒绝** POST actions for buyers in `PendingReview`, setting `BuyerStatus=Approved`/`Rejected` and writing an `AuditLog`. (Flagged for review: included only because `Approved` is required to reach the supplier flow; can be split out if the user prefers.)
 
 ## Code Change Points
 
-- **`Domain/Entities.cs`** — add nullable `PreAbnormalEmailStatus` to `Buyer`.
-- **`Services/BuyerRuleService.cs`** — core change:
-  - Add `BuyerStatus` enum + `ResolveBuyerStatus(Buyer)`.
-  - Add `BuyerMailAction` enum `{ None, Authorize, ReAuthorize, ChangeEmail, ClearAuth, Terminal }` + `ResolveBuyerMailAction(Buyer, bool hasAccount)`. (Abnormal yields ReAuthorize + ChangeEmail, represented as a small set/flags.)
-  - Rewrite `CanSalesDeleteBuyer` to the new rule.
-  - Add `CanSupplierSetStatus(Buyer, long supplierId, long? assignedSupplierId)`.
-- **`Pages/Buyer/Email.cshtml(.cs)`** — render buttons by `ResolveBuyerMailAction`; add `OnPostChangeEmail`, `OnPostClearAuth`, and `OnPostReAuthorize` (or reuse start-OAuth) handlers; keep existing pre-review behavior.
-- **`Pages/OAuth/Callback.cshtml.cs`** — add the Abnormal same-mailbox recovery branch (→ restore `PreAbnormalEmailStatus`). No change needed for the change-email path.
-- **`Pages/Supplier/Buyers.cshtml(.cs)`** — add 标记失败 / 标记完成 forms + `OnPostSetStatusAsync`; show derived buyer status.
-- **`Pages/Sales/Buyers.cshtml(.cs)`** — delete goes through new `CanSalesDeleteBuyer`; show derived buyer status.
-- **`Pages/Admin/Buyers.cshtml`** — show derived buyer status column (read-only).
+- **`Domain/Enums.cs`** — split `EmailAuthorizationStatus`; add `BuyerStatus`.
+- **`Domain/Entities.cs`** — add `BuyerStatus BuyerStatus` to `Buyer`.
+- **`Services/BuyerRuleService.cs`** — `ResolveBuyerMailAction(Buyer)` (+ `BuyerMailAction` enum `{ None, Authorize, ReAuthorize, ChangeEmail, ClearAuth }`, abnormal yields ReAuthorize+ChangeEmail); rewrite `CanSalesDeleteBuyer`; update `CanSupplierViewBuyer`; add `CanSupplierSetStatus`; optional derived display label.
+- **`Pages/Buyer/Email.cshtml(.cs)`** — render by `ResolveBuyerMailAction`; handlers `OnPostChangeEmail`, `OnPostClearAuth`, `OnPostReAuthorize` (start OAuth same account).
+- **`Pages/OAuth/Callback.cshtml.cs`** — new binding → `Authorized`+`PendingReview`; same provider+email while `Abnormal` → `Authorized` (recovery, no review reset); same while `Authorized` → token refresh only.
+- **`Pages/Supplier/Buyers.cshtml(.cs)`** — 标记失败/完成 + `OnPostSetStatusAsync`; show three statuses.
+- **`Pages/Sales/Buyers.cshtml(.cs)`** — delete via new `CanSalesDeleteBuyer`; show three statuses.
+- **`Pages/Admin/Buyers.cshtml(.cs)`** — 通过/拒绝 handlers; show three statuses.
+- **`Data/WebMailDbContext.cs`** — no relational change beyond the new column/enum mappings.
 
 ## Testing
 
-- `BuyerRuleServiceTests` — extend with:
-  - `ResolveBuyerStatus` table covering every `(EmailStatus, SupplierStatus, IsDeleted)` combination → expected `BuyerStatus`.
-  - `ResolveBuyerMailAction` per status (locked/processing yields none; failed → change; completed → clear; cleared-terminal → none; abnormal → reauth+change).
-  - `CanSalesDeleteBuyer` new rule (deletable set vs locked Processing / Abnormal; ownership check).
-  - `CanSupplierSetStatus` (assigned + Normal only).
+- `BuyerRuleServiceTests`:
+  - `ResolveBuyerMailAction` per condition (authorize; pre-review change/clear; rejected change/clear; abnormal → reauth+change; approved+unprocessed locked → none; approved+failed → change; approved+completed → clear; cleared-terminal → none).
+  - `CanSalesDeleteBuyer` (deletable set vs blocked Processing / Abnormal; ownership).
+  - `CanSupplierSetStatus` / `CanSupplierViewBuyer` (Approved + Authorized + assigned only).
 - Page-model tests:
-  - Supplier set-status: success sets `Failed`/`Completed`, switching works, blocked when not assigned / not `Normal`, audit row written.
-  - Buyer change-email: clears account, resets to `NotAuthorized` + `Unprocessed`, preserves messages.
-  - Buyer clear-auth (Completed): clears account, keeps `SupplierStatus = Completed`, results in `ClearedTerminal`, no authorize entry.
-  - Abnormal re-auth same mailbox restores `PreAbnormalEmailStatus` (covers both `Normal`→`Normal` and `PendingReview`→`PendingReview`); change-email goes to `PendingReview`.
-  - Sales delete: allowed for Failed/Completed/ClearedTerminal/early states; blocked for Processing and Abnormal.
+  - Supplier set-status: sets Failed/Completed, switching works, blocked when not assigned / not Approved / not Authorized, audit written.
+  - Admin approve/reject: PendingReview → Approved/Rejected, audit written.
+  - Buyer change-email: clears account, resets to NotAuthorized+NotSubmitted+Unprocessed, preserves messages.
+  - Buyer clear-auth from Completed: clears account, keeps Approved+Completed → terminal, no authorize entry.
+  - Abnormal re-auth same mailbox: `EmailStatus` → Authorized, BuyerStatus/SupplierStatus unchanged (covers PendingReview and Approved origins).
 
 ## Out of Scope
 
 - Reverting `SupplierStatus` to `Unprocessed`.
-- The code path that *sets* `Abnormal` (token-failure detection). This spec defines only Abnormal **recovery**; whatever introduces Abnormal later must populate `PreAbnormalEmailStatus`.
+- The detector that *sets* `EmailStatus = Abnormal` (token-failure detection). This spec defines only recovery.
 - Token encryption, incremental sync, and other prior deferrals remain deferred.
-- `CardStatus` is left as-is (entry tracking); it is not folded into the derived buyer status.
+- `CardStatus` is left as-is (entry tracking); not folded into the new fields.
