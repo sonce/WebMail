@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using WebMail.Data;
+using WebMail.Domain;
 using WebMail.Services;
+using WebMail.Services.Auth;
 using WebMail.Services.Background;
 using WebMail.Services.EmailProviders;
 
@@ -23,7 +26,14 @@ builder.Services.AddScoped<IEmailProviderResolver, EmailProviderResolver>();
 builder.Services.AddSingleton<MailSyncJobQueueService>();
 builder.Services.AddScoped<MailSyncProcessor>();
 builder.Services.AddHostedService<MailSyncBackgroundService>();
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options => { options.LoginPath = "/Login"; options.AccessDeniedPath = "/AccessDenied"; });
+builder.Services.AddSingleton<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
+{
+    options.LoginPath = "/Login";
+    options.AccessDeniedPath = "/AccessDenied";
+    options.ExpireTimeSpan = TimeSpan.FromDays(14);
+    options.SlidingExpiration = true;
+});
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Administrator"));
@@ -33,9 +43,14 @@ builder.Services.AddAuthorization(options =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+using (var scope = app.Services.CreateScope())
 {
-    app.Logger.LogWarning("Database is not auto-initialized (migrations deferred). DB-backed pages and the mail sync tick will fail until migrations/EnsureCreated are added.");
+    var db = scope.ServiceProvider.GetRequiredService<WebMailDbContext>();
+    await db.Database.EnsureCreatedAsync();
+    var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<AppUser>>();
+    var seedUserName = builder.Configuration["Seed:AdminUserName"] ?? "admin";
+    var seedPassword = builder.Configuration["Seed:AdminPassword"] ?? "Admin@123";
+    await IdentitySeeder.EnsureAdminSeededAsync(db, hasher, seedUserName, seedPassword);
 }
 
 // Configure the HTTP request pipeline.
