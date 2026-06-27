@@ -7,6 +7,11 @@
 
 <h1 class="display-6">买家列表（供应商）</h1>
 
+@if (!string.IsNullOrEmpty(Model.Message))
+{
+    <div class="alert alert-info" role="alert">@Model.Message</div>
+}
+
 @if (Model.Buyers.Count == 0)
 {
     <p>暂无买家。</p>
@@ -17,8 +22,9 @@ else
         <thead>
             <tr>
                 <th>卡密</th>
-                <th>授权状态</th>
-                <th>供应商处理状态</th>
+                <th>邮箱状态</th>
+                <th>买家状态</th>
+                <th>供应商状态</th>
                 <th>操作</th>
             </tr>
         </thead>
@@ -28,9 +34,22 @@ else
                 <tr>
                     <td>@buyer.CardNo</td>
                     <td>@buyer.EmailStatus</td>
+                    <td>@buyer.BuyerStatus</td>
                     <td>@buyer.SupplierStatus</td>
                     <td>
-                        <a class="btn btn-sm btn-primary" asp-page="Mail" asp-route-buyerId="@buyer.Id">查看邮件</a>
+                        <div class="d-flex gap-2">
+                            <a class="btn btn-sm btn-primary" asp-page="Mail" asp-route-buyerId="@buyer.Id">查看邮件</a>
+                            <form method="post" asp-page-handler="SetStatus">
+                                <input type="hidden" name="buyerId" value="@buyer.Id" />
+                                <input type="hidden" name="status" value="@SupplierProcessingStatus.Failed" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">标记失败</button>
+                            </form>
+                            <form method="post" asp-page-handler="SetStatus">
+                                <input type="hidden" name="buyerId" value="@buyer.Id" />
+                                <input type="hidden" name="status" value="@SupplierProcessingStatus.Completed" />
+                                <button type="submit" class="btn btn-sm btn-outline-success">标记完成</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
             }
