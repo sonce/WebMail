@@ -12,6 +12,28 @@
     <div class="alert alert-info" role="alert">@Model.Message</div>
 }
 
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto">
+        <select class="form-select" asp-for="StatusFilter"
+                asp-items="Html.GetEnumSelectList<WebMail.Domain.BuyerStatus>()">
+            <option value="">全部买家状态</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <select class="form-select" asp-for="EmailFilter"
+                asp-items="Html.GetEnumSelectList<WebMail.Domain.EmailAuthorizationStatus>()">
+            <option value="">全部邮箱状态</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <input class="form-control" asp-for="CardNo" placeholder="卡密关键字" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-primary">筛选</button>
+        <a class="btn btn-outline-secondary" asp-page="/Admin/Buyers">重置</a>
+    </div>
+</form>
+
 @if (Model.Buyers.Count == 0)
 {
     <p>暂无买家。</p>
@@ -52,6 +74,10 @@ else
                                 </form>
                             </div>
                         }
+                        <form method="post" asp-page-handler="Delete" class="mt-1">
+                            <input type="hidden" name="id" value="@buyer.Id" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger">删除</button>
+                        </form>
                     </td>
                 </tr>
             }
