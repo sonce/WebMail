@@ -11,7 +11,8 @@ public static class IdentitySeeder
     public static async Task EnsureAdminSeededAsync(
         WebMailDbContext db, IPasswordHasher<AppUser> hasher, string userName, string password)
     {
-        if (await db.Users.AnyAsync(u => u.UserName == userName))
+        var normalized = userName.ToLower();
+        if (await db.Users.AnyAsync(u => u.UserName.ToLower() == normalized))
         {
             return;
         }

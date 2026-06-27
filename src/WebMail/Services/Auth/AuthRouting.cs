@@ -13,21 +13,13 @@ public static class AuthRouting
         _ => "/Login",
     };
 
-    // 仅站内相对地址返回 true（等价于 IUrlHelper.IsLocalUrl），用于阻断开放重定向。
+    // 仅接受以单个 '/' 开头的站内相对地址（不接受 '~/'，因为 Redirect 不会解析 '~'），用于阻断开放重定向。
     public static bool IsLocalUrl(string? url)
     {
         if (string.IsNullOrEmpty(url))
         {
             return false;
         }
-        if (url[0] == '/')
-        {
-            return url.Length == 1 || (url[1] != '/' && url[1] != '\\');
-        }
-        if (url.Length > 1 && url[0] == '~' && url[1] == '/')
-        {
-            return url.Length == 2 || (url[2] != '/' && url[2] != '\\');
-        }
-        return false;
+        return url[0] == '/' && (url.Length == 1 || (url[1] != '/' && url[1] != '\\'));
     }
 }

@@ -33,7 +33,8 @@ public class LoginModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.UserName == UserName);
+        var normalized = UserName.ToLower();
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.UserName.ToLower() == normalized);
         if (user is null ||
             _hasher.VerifyHashedPassword(user, user.PasswordHash, Password) == PasswordVerificationResult.Failed)
         {

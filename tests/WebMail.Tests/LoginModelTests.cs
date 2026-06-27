@@ -115,6 +115,26 @@ public sealed class LoginModelTests
         Assert.Equal("/Sales/Buyers", Assert.IsType<RedirectToPageResult>(result).PageName);
     }
 
+    [Fact]
+    public async Task UpperCaseUserNameStillSignsIn()
+    {
+        await using var db = CreateDb();
+        var hasher = new PasswordHasher<AppUser>();
+        await SeedUser(db, hasher, "sue", "pw", UserRole.Sales);
+        var (ctx, auth) = TestHttpContext.WithAuth();
+        var model = new LoginModel(db, hasher)
+        {
+            PageContext = new PageContext { HttpContext = ctx },
+            UserName = "SUE",
+            Password = "pw",
+        };
+
+        var result = await model.OnPostAsync();
+
+        Assert.Equal("/Sales/Buyers", Assert.IsType<RedirectToPageResult>(result).PageName);
+        Assert.NotNull(auth.SignedInPrincipal);
+    }
+
     private static async Task SeedUser(WebMailDbContext db, PasswordHasher<AppUser> hasher, string name, string pw, UserRole role)
     {
         var user = new AppUser { UserName = name, Role = role, DisplayName = name };
