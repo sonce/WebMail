@@ -16,6 +16,7 @@ builder.Services.AddDbContext<WebMailDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddScoped<BuyerRuleService>();
+builder.Services.AddScoped<UserAdminService>();
 builder.Services.AddSingleton<CardGenerationService>();
 builder.Services.AddSingleton<MailSyncPlanner>();
 builder.Services.AddHttpClient<GmailProvider>();
