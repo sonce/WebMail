@@ -14,13 +14,6 @@ public enum BuyerMailAction
 
 public sealed class BuyerRuleService
 {
-    private static readonly HashSet<BuyerStatus> PreApprovalStatuses =
-        [BuyerStatus.NotSubmitted, BuyerStatus.PendingReview, BuyerStatus.Rejected];
-
-    public bool CanBuyerUnlink(Buyer buyer) =>
-        buyer.EmailStatus != EmailAuthorizationStatus.Abnormal
-        && PreApprovalStatuses.Contains(buyer.BuyerStatus);
-
     public string BuyerUnlinkBlockedMessage => "正在处理中，无法删除";
 
     public bool CanSalesDeleteBuyer(Buyer buyer, long salesUserId) =>

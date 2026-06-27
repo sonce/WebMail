@@ -43,18 +43,16 @@ public sealed class CallbackModel(
         var authorization = await emailProvider.CompleteAuthorizationAsync(code, state, cancellationToken);
         var existing = await db.EmailAccounts.FirstOrDefaultAsync(x => x.BuyerId == buyer.Id, cancellationToken);
 
-        if (existing is not null
-            && (!string.Equals(existing.Provider, emailProvider.Name, StringComparison.OrdinalIgnoreCase)
-                || !string.Equals(existing.Email, authorization.Email, StringComparison.OrdinalIgnoreCase))
-            && !ruleService.CanBuyerUnlink(buyer))
+        var isNewOrChangedAccount = existing is null
+            || !string.Equals(existing.Provider, emailProvider.Name, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(existing.Email, authorization.Email, StringComparison.OrdinalIgnoreCase);
+
+        if (existing is not null && isNewOrChangedAccount
+            && !ruleService.ResolveBuyerMailAction(buyer).HasFlag(BuyerMailAction.ChangeEmail))
         {
             ErrorMessage = ruleService.BuyerUnlinkBlockedMessage;
             return Page();
         }
-
-        var isNewOrChangedAccount = existing is null
-            || !string.Equals(existing.Provider, emailProvider.Name, StringComparison.OrdinalIgnoreCase)
-            || !string.Equals(existing.Email, authorization.Email, StringComparison.OrdinalIgnoreCase);
 
         if (existing is null)
         {
@@ -80,6 +78,11 @@ public sealed class CallbackModel(
         {
             buyer.EmailStatus = EmailAuthorizationStatus.Authorized;
             buyer.BuyerStatus = BuyerStatus.PendingReview;
+        }
+        else if (buyer.EmailStatus == EmailAuthorizationStatus.Abnormal)
+        {
+            // Same mailbox re-authorized: token refreshed; restore health, leave review/supplier intact.
+            buyer.EmailStatus = EmailAuthorizationStatus.Authorized;
         }
         await db.SaveChangesAsync(cancellationToken);
 
