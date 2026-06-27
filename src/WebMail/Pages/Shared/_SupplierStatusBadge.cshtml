@@ -1,0 +1,15 @@
+@using WebMail.Domain
+@model SupplierProcessingStatus
+
+@switch (Model)
+{
+    case SupplierProcessingStatus.Failed:
+        <span class="badge bg-danger">失败</span>
+        break;
+    case SupplierProcessingStatus.Completed:
+        <span class="badge bg-success">完成</span>
+        break;
+    default:
+        <span class="badge bg-secondary">未处理</span>
+        break;
+}

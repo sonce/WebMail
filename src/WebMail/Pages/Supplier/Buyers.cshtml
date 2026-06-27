@@ -35,7 +35,7 @@ else
                     <td>@buyer.CardNo</td>
                     <td>@buyer.EmailStatus</td>
                     <td>@buyer.BuyerStatus</td>
-                    <td>@buyer.SupplierStatus</td>
+                    <td><partial name="_SupplierStatusBadge" model="buyer.SupplierStatus" /></td>
                     <td>
                         <div class="d-flex gap-2">
                             <a class="btn btn-sm btn-primary" asp-page="Mail" asp-route-buyerId="@buyer.Id">查看邮件</a>
