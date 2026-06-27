@@ -135,6 +135,30 @@ public sealed class LoginModelTests
         Assert.NotNull(auth.SignedInPrincipal);
     }
 
+    [Fact]
+    public async Task DisabledUserCannotSignIn()
+    {
+        await using var db = CreateDb();
+        var hasher = new PasswordHasher<AppUser>();
+        await SeedUser(db, hasher, "sue", "pw", UserRole.Sales);
+        var disabled = await db.Users.SingleAsync();
+        disabled.IsActive = false;
+        await db.SaveChangesAsync();
+        var (ctx, auth) = TestHttpContext.WithAuth();
+        var model = new LoginModel(db, hasher)
+        {
+            PageContext = new PageContext { HttpContext = ctx },
+            UserName = "sue",
+            Password = "pw",
+        };
+
+        var result = await model.OnPostAsync();
+
+        Assert.IsType<PageResult>(result);
+        Assert.Equal("账号已被禁用", model.ErrorMessage);
+        Assert.Null(auth.SignedInPrincipal);
+    }
+
     private static async Task SeedUser(WebMailDbContext db, PasswordHasher<AppUser> hasher, string name, string pw, UserRole role)
     {
         var user = new AppUser { UserName = name, Role = role, DisplayName = name };

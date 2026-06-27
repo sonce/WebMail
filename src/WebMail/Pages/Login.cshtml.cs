@@ -42,6 +42,12 @@ public class LoginModel : PageModel
             return Page();
         }
 
+        if (!user.IsActive)
+        {
+            ErrorMessage = "账号已被禁用";
+            return Page();
+        }
+
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
