@@ -10,7 +10,7 @@ Make what a **buyer** may do, and what a **sales** user may delete, depend on wh
 - When a supplier marks a buyer **Failed**, the buyer may **change email** (re-bind a different mailbox).
 - When a supplier marks a buyer **Completed**, the buyer may **only clear authorization**; once cleared, this is terminal (no re-binding).
 - A **sales** user may delete buyers that are Failed or Completed, plus buyers still in early, un-locked states; they may not delete buyers that are locked (approved, supplier still processing) or whose mailbox is in an abnormal (broken-token) state.
-- This requires building the supplier **"set status"** action, which does not exist today.
+- This requires building the supplier **"set status"** action, which does not exist today, and **detecting** when a mailbox token goes bad (sets `Abnormal`) plus letting the buyer **recover** from it.
 
 ## Core Decision: Three Independent Status Fields
 
@@ -142,6 +142,8 @@ On `Pages/Admin/Buyers.cshtml`, add **通过** / **拒绝** POST actions for buy
 - **`Services/BuyerRuleService.cs`** — `ResolveBuyerMailAction(Buyer)` (+ `BuyerMailAction` enum `{ None, Authorize, ReAuthorize, ChangeEmail, ClearAuth }`, abnormal yields ReAuthorize+ChangeEmail); rewrite `CanSalesDeleteBuyer`; update `CanSupplierViewBuyer`; add `CanSupplierSetStatus`; optional derived display label.
 - **`Pages/Buyer/Email.cshtml(.cs)`** — render by `ResolveBuyerMailAction`; handlers `OnPostChangeEmail`, `OnPostClearAuth`, `OnPostReAuthorize` (start OAuth same account).
 - **`Pages/OAuth/Callback.cshtml.cs`** — new binding → `Authorized`+`PendingReview`; same provider+email while `Abnormal` → `Authorized` (recovery, no review reset); same while `Authorized` → token refresh only.
+- **`Services/EmailProviders/`** — add `ProviderAuthorizationException`; `GmailProvider`/`OutlookProvider` `FetchMessagesAsync` classify auth failures and rethrow it.
+- **`Services/Background/MailSyncProcessor.cs`** — dedicated `catch (ProviderAuthorizationException)` that flips `Authorized → Abnormal` and audits, before the generic catch.
 - **`Pages/Supplier/Buyers.cshtml(.cs)`** — 标记失败/完成 + `OnPostSetStatusAsync`; show three statuses.
 - **`Pages/Sales/Buyers.cshtml(.cs)`** — delete via new `CanSalesDeleteBuyer`; show three statuses.
 - **`Pages/Admin/Buyers.cshtml(.cs)`** — 通过/拒绝 handlers; show three statuses.
@@ -159,10 +161,40 @@ On `Pages/Admin/Buyers.cshtml`, add **通过** / **拒绝** POST actions for buy
   - Buyer change-email: clears account, resets to NotAuthorized+NotSubmitted+Unprocessed, preserves messages.
   - Buyer clear-auth from Completed: clears account, keeps Approved+Completed → terminal, no authorize entry.
   - Abnormal re-auth same mailbox: `EmailStatus` → Authorized, BuyerStatus/SupplierStatus unchanged (covers PendingReview and Approved origins).
+- `MailSyncProcessorTests`:
+  - A `ProviderAuthorizationException` from the provider flips the buyer `Authorized → Abnormal`, marks the job failed, and leaves BuyerStatus/SupplierStatus untouched.
+  - A generic exception marks the job failed but does **not** set Abnormal.
+
+## Abnormal Detection (in scope)
+
+`Abnormal` means the mailbox's **authorization/token is no longer usable** (buyer revoked access, refresh token expired/revoked, provider returns an auth error). It can only be discovered when sync actually uses the token. Detection and recovery are two sides of one thing, so both are in scope.
+
+**Today** `MailSyncProcessor` catches *all* exceptions generically and only marks the `SyncJob` as `Failed` — it cannot tell an authorization failure from a transient network/5xx error. Providers throw `InvalidOperationException` (Outlook, on a failed token/API call) or `TokenResponseException` (Gmail, `invalid_grant`).
+
+Design — let each provider classify its own error shapes, keep the processor provider-agnostic:
+
+- Add a shared exception `ProviderAuthorizationException : Exception` (in `EmailProviders`).
+- Each provider's `FetchMessagesAsync` catches the provider-specific authorization failure and rethrows it as `ProviderAuthorizationException`:
+  - **Outlook**: token endpoint returns 400 with `invalid_grant` (or fetch returns 401/403) → auth failure. Other non-success → leave as `InvalidOperationException` (transient).
+  - **Gmail**: `TokenResponseException` with `Error.Error == "invalid_grant"` (or `GoogleApiException` 401/403) → auth failure.
+- `MailSyncProcessor` gains a dedicated catch **before** the generic one:
+
+  ```
+  catch (ProviderAuthorizationException)
+  {
+      var buyer = await db.Buyers.FindAsync(job.BuyerId);
+      if (buyer is not null && buyer.EmailStatus == EmailAuthorizationStatus.Authorized)
+          buyer.EmailStatus = EmailAuthorizationStatus.Abnormal;   // BuyerStatus/SupplierStatus untouched
+      job.Status = SyncJobStatus.Failed; job.Error = "authorization";
+      // AuditLog
+  }
+  catch (Exception ex) { job.Status = Failed; job.Error = ex.Message; }   // transient — no Abnormal
+  ```
+
+Only flips `Authorized → Abnormal` (never clobbers another state), and never touches `BuyerStatus`/`SupplierStatus`. Once `Abnormal`, `CanSupplierViewBuyer` is false → no new `ActiveSyncWindow`/`SyncJob` is created, so it won't re-flip in a loop; the buyer sees the abnormal state and recovers via re-authorize.
 
 ## Out of Scope
 
 - Reverting `SupplierStatus` to `Unprocessed`.
-- The detector that *sets* `EmailStatus = Abnormal` (token-failure detection). This spec defines only recovery.
 - Token encryption, incremental sync, and other prior deferrals remain deferred.
 - `CardStatus` is left as-is (entry tracking); not folded into the new fields.
