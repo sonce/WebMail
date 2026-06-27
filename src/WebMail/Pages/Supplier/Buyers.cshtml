@@ -3,6 +3,9 @@
 @model WebMail.Pages.Supplier.BuyersModel
 @{
     ViewData["Title"] = "买家列表（供应商）";
+    var unprocessed = Model.Buyers.Where(b => b.SupplierStatus == SupplierProcessingStatus.Unprocessed).ToList();
+    var failed = Model.Buyers.Where(b => b.SupplierStatus == SupplierProcessingStatus.Failed).ToList();
+    var completed = Model.Buyers.Where(b => b.SupplierStatus == SupplierProcessingStatus.Completed).ToList();
 }
 
 <h1 class="display-6">买家列表（供应商）</h1>
@@ -12,47 +15,28 @@
     <div class="alert alert-info" role="alert">@Model.Message</div>
 }
 
-@if (Model.Buyers.Count == 0)
-{
-    <p>暂无买家。</p>
-}
-else
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>卡密</th>
-                <th>邮箱状态</th>
-                <th>买家状态</th>
-                <th>供应商状态</th>
-                <th>操作</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var buyer in Model.Buyers)
-            {
-                <tr>
-                    <td>@buyer.CardNo</td>
-                    <td>@buyer.EmailStatus</td>
-                    <td>@buyer.BuyerStatus</td>
-                    <td><partial name="_SupplierStatusBadge" model="buyer.SupplierStatus" /></td>
-                    <td>
-                        <div class="d-flex gap-2">
-                            <a class="btn btn-sm btn-primary" asp-page="Mail" asp-route-buyerId="@buyer.Id">查看邮件</a>
-                            <form method="post" asp-page-handler="SetStatus">
-                                <input type="hidden" name="buyerId" value="@buyer.Id" />
-                                <input type="hidden" name="status" value="@SupplierProcessingStatus.Failed" />
-                                <button type="submit" class="btn btn-sm btn-outline-danger">标记失败</button>
-                            </form>
-                            <form method="post" asp-page-handler="SetStatus">
-                                <input type="hidden" name="buyerId" value="@buyer.Id" />
-                                <input type="hidden" name="status" value="@SupplierProcessingStatus.Completed" />
-                                <button type="submit" class="btn btn-sm btn-outline-success">标记完成</button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+<ul class="nav nav-tabs" id="supplierBuyerTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="unprocessed-tab" data-bs-toggle="tab"
+                data-bs-target="#unprocessed-pane" type="button" role="tab">未处理 (@unprocessed.Count)</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="failed-tab" data-bs-toggle="tab"
+                data-bs-target="#failed-pane" type="button" role="tab">失败 (@failed.Count)</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="completed-tab" data-bs-toggle="tab"
+                data-bs-target="#completed-pane" type="button" role="tab">完成 (@completed.Count)</button>
+    </li>
+</ul>
+<div class="tab-content pt-3">
+    <div class="tab-pane fade show active" id="unprocessed-pane" role="tabpanel" aria-labelledby="unprocessed-tab">
+        <partial name="_BuyerTable" model="unprocessed" />
+    </div>
+    <div class="tab-pane fade" id="failed-pane" role="tabpanel" aria-labelledby="failed-tab">
+        <partial name="_BuyerTable" model="failed" />
+    </div>
+    <div class="tab-pane fade" id="completed-pane" role="tabpanel" aria-labelledby="completed-tab">
+        <partial name="_BuyerTable" model="completed" />
+    </div>
+</div>

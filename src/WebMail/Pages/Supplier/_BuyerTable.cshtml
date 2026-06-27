@@ -1,0 +1,47 @@
+@using WebMail.Domain
+@model IReadOnlyList<Buyer>
+
+@if (Model.Count == 0)
+{
+    <p>暂无买家。</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>卡密</th>
+                <th>邮箱状态</th>
+                <th>买家状态</th>
+                <th>供应商状态</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var buyer in Model)
+            {
+                <tr>
+                    <td>@buyer.CardNo</td>
+                    <td>@buyer.EmailStatus</td>
+                    <td>@buyer.BuyerStatus</td>
+                    <td><partial name="_SupplierStatusBadge" model="buyer.SupplierStatus" /></td>
+                    <td>
+                        <div class="d-flex gap-2">
+                            <a class="btn btn-sm btn-primary" asp-page="/Supplier/Mail" asp-route-buyerId="@buyer.Id">查看邮件</a>
+                            <form method="post" asp-page-handler="SetStatus">
+                                <input type="hidden" name="buyerId" value="@buyer.Id" />
+                                <input type="hidden" name="status" value="@SupplierProcessingStatus.Failed" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">标记失败</button>
+                            </form>
+                            <form method="post" asp-page-handler="SetStatus">
+                                <input type="hidden" name="buyerId" value="@buyer.Id" />
+                                <input type="hidden" name="status" value="@SupplierProcessingStatus.Completed" />
+                                <button type="submit" class="btn btn-sm btn-outline-success">标记完成</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
