@@ -66,29 +66,40 @@ public sealed class GmailProvider(IConfiguration configuration, HttpClient httpC
 
     public async Task<IReadOnlyList<ProviderMessage>> FetchMessagesAsync(string refreshToken, IReadOnlyCollection<string> allowedSenders, DateTimeOffset? since, CancellationToken cancellationToken)
     {
-        using var service = CreateService(refreshToken);
-
-        var listRequest = service.Users.Messages.List("me");
-        listRequest.Q = BuildGmailQuery(allowedSenders, since);
-        listRequest.IncludeSpamTrash = true;
-        listRequest.MaxResults = 50;
-
-        var listResponse = await listRequest.ExecuteAsync(cancellationToken);
-        if (listResponse.Messages is null)
+        try
         {
-            return [];
-        }
+            using var service = CreateService(refreshToken);
 
-        var results = new List<ProviderMessage>();
-        foreach (var reference in listResponse.Messages)
+            var listRequest = service.Users.Messages.List("me");
+            listRequest.Q = BuildGmailQuery(allowedSenders, since);
+            listRequest.IncludeSpamTrash = true;
+            listRequest.MaxResults = 50;
+
+            var listResponse = await listRequest.ExecuteAsync(cancellationToken);
+            if (listResponse.Messages is null)
+            {
+                return [];
+            }
+
+            var results = new List<ProviderMessage>();
+            foreach (var reference in listResponse.Messages)
+            {
+                var getRequest = service.Users.Messages.Get("me", reference.Id);
+                getRequest.Format = UsersResource.MessagesResource.GetRequest.FormatEnum.Full;
+                var message = await getRequest.ExecuteAsync(cancellationToken);
+                results.Add(MapMessage(message));
+            }
+
+            return results;
+        }
+        catch (Google.Apis.Auth.OAuth2.Responses.TokenResponseException ex) when (ex.Error?.Error == "invalid_grant")
         {
-            var getRequest = service.Users.Messages.Get("me", reference.Id);
-            getRequest.Format = UsersResource.MessagesResource.GetRequest.FormatEnum.Full;
-            var message = await getRequest.ExecuteAsync(cancellationToken);
-            results.Add(MapMessage(message));
+            throw new ProviderAuthorizationException("Gmail refresh token rejected.", ex);
         }
-
-        return results;
+        catch (Google.GoogleApiException ex) when (ex.HttpStatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden)
+        {
+            throw new ProviderAuthorizationException("Gmail authorization failed.", ex);
+        }
     }
 
     private GmailService CreateService(string refreshToken)

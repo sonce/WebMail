@@ -48,6 +48,18 @@ public sealed class MailSyncProcessor(IEmailProviderResolver providers, IConfigu
             {
                 throw;
             }
+            catch (ProviderAuthorizationException)
+            {
+                var buyer = await db.Buyers.FirstOrDefaultAsync(b => b.Id == job.BuyerId, cancellationToken);
+                if (buyer is not null && buyer.EmailStatus == EmailAuthorizationStatus.Authorized)
+                {
+                    buyer.EmailStatus = EmailAuthorizationStatus.Abnormal;
+                    db.AuditLogs.Add(new AuditLog { Action = "MailboxAbnormal", Details = $"buyer={job.BuyerId}" });
+                }
+                job.Status = SyncJobStatus.Failed;
+                job.Error = "authorization";
+                job.CompletedAt = now;
+            }
             catch (Exception ex)
             {
                 job.Status = SyncJobStatus.Failed;

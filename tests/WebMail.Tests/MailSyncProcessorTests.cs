@@ -107,6 +107,40 @@ public sealed class MailSyncProcessorTests
         Assert.Empty(await db.EmailMessages.ToListAsync());
     }
 
+    [Fact]
+    public async Task ProcessPendingFlipsBuyerToAbnormalOnAuthFailure()
+    {
+        await using var db = CreateDb();
+        SeedBuyer(db, id: 1, email: EmailAuthorizationStatus.Authorized);
+        SeedAccount(db, buyerId: 1, accountId: 1, provider: "AuthBoom");
+        db.SyncJobs.Add(new SyncJob { BuyerId = 1, Status = SyncJobStatus.Pending });
+        await db.SaveChangesAsync();
+
+        var processor = CreateProcessor(new AuthThrowingProvider("AuthBoom"));
+        await processor.ProcessPendingAsync(db, DateTimeOffset.UtcNow, CancellationToken.None);
+
+        var buyer = await db.Buyers.SingleAsync(x => x.Id == 1);
+        Assert.Equal(EmailAuthorizationStatus.Abnormal, buyer.EmailStatus);
+        Assert.Equal(BuyerStatus.Approved, buyer.BuyerStatus);
+        Assert.Equal(SupplierProcessingStatus.Failed, buyer.SupplierStatus);
+        Assert.Equal(SyncJobStatus.Failed, (await db.SyncJobs.SingleAsync()).Status);
+    }
+
+    [Fact]
+    public async Task ProcessPendingDoesNotFlipOnGenericError()
+    {
+        await using var db = CreateDb();
+        SeedBuyer(db, id: 1, email: EmailAuthorizationStatus.Authorized);
+        SeedAccount(db, buyerId: 1, accountId: 1, provider: "Boom");
+        db.SyncJobs.Add(new SyncJob { BuyerId = 1, Status = SyncJobStatus.Pending });
+        await db.SaveChangesAsync();
+
+        var processor = CreateProcessor(new ThrowingProvider("Boom"));
+        await processor.ProcessPendingAsync(db, DateTimeOffset.UtcNow, CancellationToken.None);
+
+        Assert.Equal(EmailAuthorizationStatus.Authorized, (await db.Buyers.SingleAsync(x => x.Id == 1)).EmailStatus);
+    }
+
     private static MailSyncProcessor CreateProcessor(IEmailProvider provider)
     {
         var resolver = new EmailProviderResolver([provider]);
@@ -135,6 +169,9 @@ public sealed class MailSyncProcessorTests
         });
     }
 
+    private static void SeedBuyer(WebMailDbContext db, long id, EmailAuthorizationStatus email, BuyerStatus buyer = BuyerStatus.Approved, SupplierProcessingStatus supplier = SupplierProcessingStatus.Failed) =>
+        db.Buyers.Add(new Buyer { Id = id, CardNo = $"card-{id}", EmailStatus = email, BuyerStatus = buyer, SupplierStatus = supplier });
+
     private static ProviderMessage Message(string id, MailFolder folder, string subject = "s") =>
         new(id, null, "orders@example.com", "buyer@example.com", subject, DateTimeOffset.UtcNow, "body", null, null, folder);
 
@@ -155,5 +192,13 @@ public sealed class MailSyncProcessorTests
         public OAuthStartResult BuildAuthorizationUrl(string cardNo) => new(cardNo, cardNo);
         public Task<OAuthCallbackResult> CompleteAuthorizationAsync(string code, string state, CancellationToken cancellationToken) => throw new NotImplementedException();
         public Task<IReadOnlyList<ProviderMessage>> FetchMessagesAsync(string refreshToken, IReadOnlyCollection<string> allowedSenders, DateTimeOffset? since, CancellationToken cancellationToken) => throw new InvalidOperationException("boom");
+    }
+
+    private sealed class AuthThrowingProvider(string name) : IEmailProvider
+    {
+        public string Name { get; } = name;
+        public OAuthStartResult BuildAuthorizationUrl(string cardNo) => new(cardNo, cardNo);
+        public Task<OAuthCallbackResult> CompleteAuthorizationAsync(string code, string state, CancellationToken cancellationToken) => throw new NotImplementedException();
+        public Task<IReadOnlyList<ProviderMessage>> FetchMessagesAsync(string refreshToken, IReadOnlyCollection<string> allowedSenders, DateTimeOffset? since, CancellationToken cancellationToken) => throw new ProviderAuthorizationException("auth failed");
     }
 }

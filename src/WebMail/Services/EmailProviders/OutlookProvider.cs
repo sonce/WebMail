@@ -95,6 +95,10 @@ public sealed class OutlookProvider(IConfiguration configuration, HttpClient htt
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
         using var response = await httpClient.SendAsync(request, cancellationToken);
+        if (response.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden)
+        {
+            throw new ProviderAuthorizationException($"Microsoft Graph fetch rejected: {(int)response.StatusCode}.");
+        }
         response.EnsureSuccessStatusCode();
 
         using var payload = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
@@ -150,7 +154,16 @@ public sealed class OutlookProvider(IConfiguration configuration, HttpClient htt
     private async Task<TokenResult> RequestTokenAsync(Dictionary<string, string> form, CancellationToken cancellationToken)
     {
         using var response = await httpClient.PostAsync(TokenEndpoint, new FormUrlEncodedContent(form), cancellationToken);
-        await EnsureSuccessOrThrowAsync(response, "Microsoft token request", cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (response.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden
+                || (response.StatusCode == System.Net.HttpStatusCode.BadRequest && errorBody.Contains("invalid_grant", StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new ProviderAuthorizationException($"Microsoft token refresh rejected: {(int)response.StatusCode}. {errorBody}");
+            }
+            throw new InvalidOperationException($"Microsoft token request failed: {(int)response.StatusCode} {response.ReasonPhrase}. {errorBody}");
+        }
 
         using var payload = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
         var root = payload.RootElement;
