@@ -425,6 +425,7 @@ git commit -m "feat: reject login for disabled accounts"
 **Files:**
 - Create: `src/WebMail/Pages/Admin/Sales.cshtml`
 - Create: `src/WebMail/Pages/Admin/Sales.cshtml.cs`
+- Create: `src/WebMail/Pages/Admin/_UserManagement.cshtml`（销售员/供应商两页共享的视图 partial）
 - Test: `tests/WebMail.Tests/AdminSalesModelTests.cs`
 
 **Interfaces:**
@@ -580,16 +581,12 @@ public class SalesModel : PageModel
 }
 ```
 
-- [ ] **Step 4: 实现视图**
+- [ ] **Step 4: 实现共享 partial 与瘦身视图**
 
-创建 `src/WebMail/Pages/Admin/Sales.cshtml`：
+创建共享 partial `src/WebMail/Pages/Admin/_UserManagement.cshtml`（类型化为基类 `SalesModel`，因 `SuppliersModel : SalesModel`，两页都能传入）：
 
 ```cshtml
-@page
 @model WebMail.Pages.Admin.SalesModel
-@{
-    ViewData["Title"] = $"{Model.RoleTitle}管理";
-}
 
 <h1 class="display-6">@(Model.RoleTitle)管理</h1>
 
@@ -667,6 +664,18 @@ else
 }
 ```
 
+然后创建瘦身的页面 `src/WebMail/Pages/Admin/Sales.cshtml`：
+
+```cshtml
+@page
+@model WebMail.Pages.Admin.SalesModel
+@{
+    ViewData["Title"] = $"{Model.RoleTitle}管理";
+}
+
+<partial name="_UserManagement" model="Model" />
+```
+
 - [ ] **Step 5: 运行测试确认通过**
 
 Run: `dotnet test tests/WebMail.Tests --filter AdminSalesModelTests`
@@ -675,7 +684,7 @@ Expected: PASS（3 个测试）。
 - [ ] **Step 6: 提交**
 
 ```bash
-git add src/WebMail/Pages/Admin/Sales.cshtml src/WebMail/Pages/Admin/Sales.cshtml.cs tests/WebMail.Tests/AdminSalesModelTests.cs
+git add src/WebMail/Pages/Admin/Sales.cshtml src/WebMail/Pages/Admin/Sales.cshtml.cs src/WebMail/Pages/Admin/_UserManagement.cshtml tests/WebMail.Tests/AdminSalesModelTests.cs
 git commit -m "feat: add admin sales management page"
 ```
 
@@ -790,7 +799,7 @@ public class SuppliersModel : SalesModel
 
 - [ ] **Step 4: 实现视图**
 
-创建 `src/WebMail/Pages/Admin/Suppliers.cshtml`：
+创建 `src/WebMail/Pages/Admin/Suppliers.cshtml`（渲染 Task 3 创建的共享 partial）：
 
 ```cshtml
 @page
@@ -799,80 +808,7 @@ public class SuppliersModel : SalesModel
     ViewData["Title"] = $"{Model.RoleTitle}管理";
 }
 
-<h1 class="display-6">@(Model.RoleTitle)管理</h1>
-
-@if (!string.IsNullOrEmpty(Model.Message))
-{
-    <div class="alert alert-info" role="alert">@Model.Message</div>
-}
-
-<div class="card mb-4">
-    <div class="card-body">
-        <h2 class="h5">新建@(Model.RoleTitle)</h2>
-        <form method="post" asp-page-handler="Create" class="row g-2">
-            <div class="col-auto">
-                <input class="form-control" asp-for="NewUserName" placeholder="用户名" />
-            </div>
-            <div class="col-auto">
-                <input class="form-control" asp-for="NewDisplayName" placeholder="显示名" />
-            </div>
-            <div class="col-auto">
-                <input class="form-control" type="password" asp-for="NewPassword" placeholder="初始密码（≥6位）" />
-            </div>
-            <div class="col-auto">
-                <button type="submit" class="btn btn-primary">创建</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-@if (Model.Users.Count == 0)
-{
-    <p>暂无@(Model.RoleTitle)。</p>
-}
-else
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>用户名</th>
-                <th>显示名</th>
-                <th>状态</th>
-                <th>关联买家数</th>
-                <th>创建时间</th>
-                <th>操作</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var u in Model.Users)
-            {
-                <tr>
-                    <td>@u.UserName</td>
-                    <td>@u.DisplayName</td>
-                    <td>@(u.IsActive ? "启用" : "禁用")</td>
-                    <td>@u.LinkedBuyerCount</td>
-                    <td>@u.CreatedAt</td>
-                    <td>
-                        <div class="d-flex gap-2">
-                            <form method="post" asp-page-handler="ResetPassword" class="d-flex gap-1">
-                                <input type="hidden" name="id" value="@u.Id" />
-                                <input class="form-control form-control-sm" type="password" name="password" placeholder="新密码" />
-                                <button type="submit" class="btn btn-sm btn-outline-secondary">重置密码</button>
-                            </form>
-                            <form method="post" asp-page-handler="SetActive">
-                                <input type="hidden" name="id" value="@u.Id" />
-                                <input type="hidden" name="isActive" value="@((!u.IsActive).ToString().ToLower())" />
-                                <button type="submit" class="btn btn-sm @(u.IsActive ? "btn-outline-danger" : "btn-outline-success")">
-                                    @(u.IsActive ? "禁用" : "启用")
-                                </button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+<partial name="_UserManagement" model="Model" />
 ```
 
 - [ ] **Step 5: 运行测试确认通过**
