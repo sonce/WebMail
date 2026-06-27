@@ -1,0 +1,7 @@
+@page
+@model WebMail.Pages.Admin.SalesModel
+@{
+    ViewData["Title"] = $"{Model.RoleTitle}管理";
+}
+
+<partial name="_UserManagement" model="Model" />
