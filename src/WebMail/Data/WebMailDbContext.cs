@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WebMail.Domain;
 
 namespace WebMail.Data;
@@ -25,5 +26,23 @@ public sealed class WebMailDbContext(DbContextOptions<WebMailDbContext> options)
         modelBuilder.Entity<AllowedSender>().HasIndex(x => x.EmailAddress).IsUnique();
         modelBuilder.Entity<BuyerSupplierAssignment>().HasIndex(x => x.BuyerId).IsUnique();
         modelBuilder.Entity<ActiveSyncWindow>().HasIndex(x => x.BuyerId).IsUnique();
+
+        // SQLite cannot ORDER BY / compare DateTimeOffset natively. Store every
+        // DateTimeOffset as UTC ticks (a sortable long) so SQL ordering works.
+        // All values are written as UtcNow, so collapsing to the UTC instant is safe.
+        var dateTimeOffsetToTicks = new ValueConverter<DateTimeOffset, long>(
+            v => v.UtcTicks,
+            v => new DateTimeOffset(v, TimeSpan.Zero));
+
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType == typeof(DateTimeOffset) || property.ClrType == typeof(DateTimeOffset?))
+                {
+                    property.SetValueConverter(dateTimeOffsetToTicks);
+                }
+            }
+        }
     }
 }
