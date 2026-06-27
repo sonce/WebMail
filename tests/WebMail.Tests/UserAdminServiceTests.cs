@@ -91,6 +91,52 @@ public sealed class UserAdminServiceTests
     }
 
     [Fact]
+    public async Task ResetPasswordRejectsRoleMismatch()
+    {
+        await using var db = CreateDb();
+        var svc = new UserAdminService(db, new PasswordHasher<AppUser>());
+        db.Users.Add(new AppUser { UserName = "alice", Role = UserRole.Sales, DisplayName = "Alice", PasswordHash = "orig" });
+        await db.SaveChangesAsync();
+        var id = (await db.Users.SingleAsync()).Id;
+
+        var result = await svc.ResetPasswordAsync(id, "newpass1", null, UserRole.Supplier);
+
+        Assert.False(result.Success);
+        Assert.Equal("orig", (await db.Users.SingleAsync()).PasswordHash);
+        Assert.Empty(await db.AuditLogs.ToListAsync());
+    }
+
+    [Fact]
+    public async Task SetActiveRejectsRoleMismatch()
+    {
+        await using var db = CreateDb();
+        var svc = new UserAdminService(db, new PasswordHasher<AppUser>());
+        db.Users.Add(new AppUser { UserName = "alice", Role = UserRole.Sales, DisplayName = "Alice", IsActive = true });
+        await db.SaveChangesAsync();
+        var id = (await db.Users.SingleAsync()).Id;
+
+        var result = await svc.SetActiveAsync(id, false, null, UserRole.Supplier);
+
+        Assert.False(result.Success);
+        Assert.True((await db.Users.SingleAsync()).IsActive);
+        Assert.Empty(await db.AuditLogs.ToListAsync());
+    }
+
+    [Fact]
+    public async Task ResetPasswordAllowsMatchingRole()
+    {
+        await using var db = CreateDb();
+        var svc = new UserAdminService(db, new PasswordHasher<AppUser>());
+        db.Users.Add(new AppUser { UserName = "alice", Role = UserRole.Sales, DisplayName = "Alice", PasswordHash = "orig" });
+        await db.SaveChangesAsync();
+        var id = (await db.Users.SingleAsync()).Id;
+
+        var result = await svc.ResetPasswordAsync(id, "newpass1", null, UserRole.Sales);
+
+        Assert.True(result.Success);
+    }
+
+    [Fact]
     public async Task ListByRoleCountsSalesBuyersExcludingDeleted()
     {
         await using var db = CreateDb();

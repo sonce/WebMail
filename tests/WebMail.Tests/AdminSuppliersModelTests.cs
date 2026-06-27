@@ -42,6 +42,20 @@ public sealed class AdminSuppliersModelTests
         Assert.Equal("p", model.Users[0].UserName);
     }
 
+    [Fact]
+    public async Task SetActiveDisablesSupplier()
+    {
+        await using var db = CreateDb();
+        db.Users.Add(new AppUser { UserName = "p", Role = UserRole.Supplier, DisplayName = "p" });
+        await db.SaveChangesAsync();
+        var id = (await db.Users.SingleAsync()).Id;
+        var model = CreateModel(db);
+
+        await model.OnPostSetActiveAsync(id, false);
+
+        Assert.False((await db.Users.SingleAsync()).IsActive);
+    }
+
     private static SuppliersModel CreateModel(WebMailDbContext db)
     {
         var model = new SuppliersModel(new UserAdminService(db, new PasswordHasher<AppUser>()));

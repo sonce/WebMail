@@ -61,7 +61,7 @@ public sealed class UserAdminService
         return new(true, "已创建账号。");
     }
 
-    public async Task<UserAdminResult> ResetPasswordAsync(long userId, string newPassword, long? actingAdminId)
+    public async Task<UserAdminResult> ResetPasswordAsync(long userId, string newPassword, long? actingAdminId, UserRole? expectedRole = null)
     {
         if ((newPassword ?? string.Empty).Length < MinPasswordLength)
         {
@@ -69,7 +69,7 @@ public sealed class UserAdminService
         }
 
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if (user is null)
+        if (user is null || (expectedRole is not null && user.Role != expectedRole))
         {
             return new(false, "账号不存在。");
         }
@@ -85,10 +85,10 @@ public sealed class UserAdminService
         return new(true, "已重置密码。");
     }
 
-    public async Task<UserAdminResult> SetActiveAsync(long userId, bool isActive, long? actingAdminId)
+    public async Task<UserAdminResult> SetActiveAsync(long userId, bool isActive, long? actingAdminId, UserRole? expectedRole = null)
     {
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if (user is null)
+        if (user is null || (expectedRole is not null && user.Role != expectedRole))
         {
             return new(false, "账号不存在。");
         }

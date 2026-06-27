@@ -35,14 +35,14 @@ public class SalesModel : PageModel
 
     public async Task<IActionResult> OnPostResetPasswordAsync(long id, string password)
     {
-        Message = (await _users.ResetPasswordAsync(id, password, AdminId())).Message;
+        Message = (await _users.ResetPasswordAsync(id, password, AdminId(), Role)).Message;
         await LoadAsync();
         return Page();
     }
 
     public async Task<IActionResult> OnPostSetActiveAsync(long id, bool isActive)
     {
-        Message = (await _users.SetActiveAsync(id, isActive, AdminId())).Message;
+        Message = (await _users.SetActiveAsync(id, isActive, AdminId(), Role)).Message;
         await LoadAsync();
         return Page();
     }
