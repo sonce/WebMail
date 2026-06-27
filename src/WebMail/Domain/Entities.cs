@@ -17,6 +17,7 @@ public sealed class Buyer
     public CardStatus CardStatus { get; set; } = CardStatus.Unused;
     public long? SaleId { get; set; }
     public EmailAuthorizationStatus EmailStatus { get; set; } = EmailAuthorizationStatus.NotAuthorized;
+    public BuyerStatus BuyerStatus { get; set; } = BuyerStatus.NotSubmitted;
     public SupplierProcessingStatus SupplierStatus { get; set; } = SupplierProcessingStatus.Unprocessed;
     public bool IsDeleted { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;

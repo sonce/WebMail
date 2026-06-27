@@ -27,7 +27,7 @@ public sealed class BuyerPageModelTests
     public async Task BuyerEmailPageDoesNotLoadStoredMessages()
     {
         await using var db = CreateDb();
-        var buyer = new Buyer { CardNo = "card-2", EmailStatus = EmailAuthorizationStatus.Normal };
+        var buyer = new Buyer { CardNo = "card-2", BuyerStatus = BuyerStatus.Approved, EmailStatus = EmailAuthorizationStatus.Authorized };
         db.Buyers.Add(buyer);
         await db.SaveChangesAsync();
         var account = new EmailAccount { BuyerId = buyer.Id, Email = "buyer@example.com", Provider = "Gmail", ProviderUserId = "provider-user", EncryptedRefreshToken = "token" };
@@ -47,7 +47,7 @@ public sealed class BuyerPageModelTests
     public async Task UnlinkKeepsMessagesAuditableByBuyer()
     {
         await using var db = CreateDb();
-        var buyer = new Buyer { CardNo = "card-3", EmailStatus = EmailAuthorizationStatus.PendingReview };
+        var buyer = new Buyer { CardNo = "card-3", BuyerStatus = BuyerStatus.PendingReview, EmailStatus = EmailAuthorizationStatus.Authorized };
         db.Buyers.Add(buyer);
         await db.SaveChangesAsync();
         var account = new EmailAccount { BuyerId = buyer.Id, Email = "buyer@example.com", Provider = "Gmail", ProviderUserId = "provider-user", EncryptedRefreshToken = "token" };

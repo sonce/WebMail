@@ -46,7 +46,7 @@ public sealed class CallbackModel(
         if (existing is not null
             && (!string.Equals(existing.Provider, emailProvider.Name, StringComparison.OrdinalIgnoreCase)
                 || !string.Equals(existing.Email, authorization.Email, StringComparison.OrdinalIgnoreCase))
-            && !ruleService.CanBuyerUnlink(buyer.EmailStatus))
+            && !ruleService.CanBuyerUnlink(buyer))
         {
             ErrorMessage = ruleService.BuyerUnlinkBlockedMessage;
             return Page();
@@ -78,7 +78,8 @@ public sealed class CallbackModel(
         buyer.CardStatus = CardStatus.Authorized;
         if (isNewOrChangedAccount)
         {
-            buyer.EmailStatus = EmailAuthorizationStatus.PendingReview;
+            buyer.EmailStatus = EmailAuthorizationStatus.Authorized;
+            buyer.BuyerStatus = BuyerStatus.PendingReview;
         }
         await db.SaveChangesAsync(cancellationToken);
 

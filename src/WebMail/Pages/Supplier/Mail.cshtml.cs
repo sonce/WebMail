@@ -33,7 +33,8 @@ public class MailModel : PageModel
             .AnyAsync(x => x.BuyerId == buyerId
                 && x.SupplierId == supplierId
                 && !x.Buyer.IsDeleted
-                && x.Buyer.EmailStatus == EmailAuthorizationStatus.Normal);
+                && x.Buyer.BuyerStatus == BuyerStatus.Approved
+                && x.Buyer.EmailStatus == EmailAuthorizationStatus.Authorized);
 
         if (!authorized)
         {

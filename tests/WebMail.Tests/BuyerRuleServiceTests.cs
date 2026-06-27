@@ -9,24 +9,28 @@ public sealed class BuyerRuleServiceTests
     private readonly BuyerRuleService _service = new();
 
     [Theory]
-    [InlineData(EmailAuthorizationStatus.NotAuthorized, true)]
-    [InlineData(EmailAuthorizationStatus.PendingReview, true)]
-    [InlineData(EmailAuthorizationStatus.Rejected, true)]
-    [InlineData(EmailAuthorizationStatus.Normal, false)]
-    [InlineData(EmailAuthorizationStatus.Abnormal, false)]
-    public void BuyerCanUnlinkOnlyBeforeProcessing(EmailAuthorizationStatus status, bool expected) => Assert.Equal(expected, _service.CanBuyerUnlink(status));
+    [InlineData(BuyerStatus.NotSubmitted, EmailAuthorizationStatus.NotAuthorized, true)]
+    [InlineData(BuyerStatus.PendingReview, EmailAuthorizationStatus.Authorized, true)]
+    [InlineData(BuyerStatus.Rejected, EmailAuthorizationStatus.Authorized, true)]
+    [InlineData(BuyerStatus.Approved, EmailAuthorizationStatus.Authorized, false)]
+    [InlineData(BuyerStatus.PendingReview, EmailAuthorizationStatus.Abnormal, false)]
+    public void BuyerCanUnlinkOnlyBeforeApproval(BuyerStatus buyerStatus, EmailAuthorizationStatus emailStatus, bool expected)
+    {
+        var buyer = new Buyer { BuyerStatus = buyerStatus, EmailStatus = emailStatus };
+        Assert.Equal(expected, _service.CanBuyerUnlink(buyer));
+    }
 
     [Fact]
     public void SalesCannotDeleteOtherSalesBuyer()
     {
-        var buyer = new Buyer { SaleId = 10, EmailStatus = EmailAuthorizationStatus.PendingReview };
+        var buyer = new Buyer { SaleId = 10, BuyerStatus = BuyerStatus.PendingReview, EmailStatus = EmailAuthorizationStatus.Authorized };
         Assert.False(_service.CanSalesDeleteBuyer(buyer, 99));
     }
 
     [Fact]
-    public void SupplierCanSeeOnlyAssignedNormalBuyer()
+    public void SupplierCanSeeOnlyAssignedApprovedAuthorizedBuyer()
     {
-        var buyer = new Buyer { EmailStatus = EmailAuthorizationStatus.Normal };
+        var buyer = new Buyer { BuyerStatus = BuyerStatus.Approved, EmailStatus = EmailAuthorizationStatus.Authorized };
         Assert.True(_service.CanSupplierViewBuyer(buyer, 7, 7));
     }
 }

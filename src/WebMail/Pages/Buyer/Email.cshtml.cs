@@ -56,7 +56,7 @@ public class EmailModel : PageModel
 
         var account = await _db.EmailAccounts.FirstOrDefaultAsync(a => a.BuyerId == buyer.Id);
 
-        if (!_ruleService.CanBuyerUnlink(buyer.EmailStatus))
+        if (!_ruleService.CanBuyerUnlink(buyer))
         {
             ErrorMessage = _ruleService.BuyerUnlinkBlockedMessage;
         }
@@ -64,6 +64,7 @@ public class EmailModel : PageModel
         {
             _db.EmailAccounts.Remove(account);
             buyer.EmailStatus = EmailAuthorizationStatus.NotAuthorized;
+            buyer.BuyerStatus = BuyerStatus.NotSubmitted;
             await _db.SaveChangesAsync();
             account = null;
         }

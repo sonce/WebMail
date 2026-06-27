@@ -29,7 +29,7 @@ public class BuyersModel : PageModel
 
         Buyers = await _db.BuyerSupplierAssignments
             .Include(x => x.Buyer)
-            .Where(x => x.SupplierId == supplierId && !x.Buyer.IsDeleted && x.Buyer.EmailStatus == EmailAuthorizationStatus.Normal)
+            .Where(x => x.SupplierId == supplierId && !x.Buyer.IsDeleted && x.Buyer.BuyerStatus == BuyerStatus.Approved && x.Buyer.EmailStatus == EmailAuthorizationStatus.Authorized)
             .Select(x => x.Buyer)
             .ToListAsync();
 
