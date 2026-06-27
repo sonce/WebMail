@@ -7,6 +7,11 @@
 
 <h1 class="display-6">买家列表（管理员）</h1>
 
+@if (!string.IsNullOrEmpty(Model.Message))
+{
+    <div class="alert alert-info" role="alert">@Model.Message</div>
+}
+
 @if (Model.Buyers.Count == 0)
 {
     <p>暂无买家。</p>
@@ -17,9 +22,11 @@ else
         <thead>
             <tr>
                 <th>卡密</th>
-                <th>授权状态</th>
-                <th>供应商处理状态</th>
+                <th>邮箱状态</th>
+                <th>买家状态</th>
+                <th>供应商状态</th>
                 <th>创建时间</th>
+                <th>操作</th>
             </tr>
         </thead>
         <tbody>
@@ -28,8 +35,24 @@ else
                 <tr>
                     <td>@buyer.CardNo</td>
                     <td>@buyer.EmailStatus</td>
+                    <td>@buyer.BuyerStatus</td>
                     <td>@buyer.SupplierStatus</td>
                     <td>@buyer.CreatedAt</td>
+                    <td>
+                        @if (buyer.BuyerStatus == BuyerStatus.PendingReview)
+                        {
+                            <div class="d-flex gap-2">
+                                <form method="post" asp-page-handler="Approve">
+                                    <input type="hidden" name="id" value="@buyer.Id" />
+                                    <button type="submit" class="btn btn-sm btn-success">通过</button>
+                                </form>
+                                <form method="post" asp-page-handler="Reject">
+                                    <input type="hidden" name="id" value="@buyer.Id" />
+                                    <button type="submit" class="btn btn-sm btn-danger">拒绝</button>
+                                </form>
+                            </div>
+                        }
+                    </td>
                 </tr>
             }
         </tbody>
