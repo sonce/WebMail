@@ -23,6 +23,7 @@ builder.Services.AddDbContext<WebMailDbContext>(options =>
 
 builder.Services.AddScoped<BuyerRuleService>();
 builder.Services.AddScoped<UserAdminService>();
+builder.Services.AddScoped<CardKeyService>();
 builder.Services.AddSingleton<CardGenerationService>();
 builder.Services.AddSingleton<MailSyncPlanner>();
 builder.Services.AddHttpClient<GmailProvider>();

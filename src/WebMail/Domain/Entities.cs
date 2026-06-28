@@ -22,6 +22,7 @@ public sealed class Buyer
     public SupplierProcessingStatus SupplierStatus { get; set; } = SupplierProcessingStatus.Unprocessed;
     public bool IsDeleted { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? CardUsedAt { get; set; }
 }
 
 public sealed class EmailAccount
