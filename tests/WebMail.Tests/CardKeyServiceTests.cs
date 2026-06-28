@@ -143,6 +143,110 @@ public sealed class CardKeyServiceTests
         Assert.Equal("Alice", sales[0].DisplayName);
     }
 
+    [Fact]
+    public async Task SendAssignsSaleMarksSentAndStampsTime()
+    {
+        await using var db = CreateDb();
+        SeedSale(db, id: 5, name: "Alice");
+        db.Buyers.Add(new Buyer { Id = 1, CardNo = "c1", CardSendStatus = CardSendStatus.NotSent });
+        await db.SaveChangesAsync();
+        var service = new CardKeyService(db, new CardGenerationService());
+
+        var result = await service.SendAsync(new[] { 1L }, saleId: 5, actingAdminId: 7);
+
+        Assert.True(result.Success);
+        Assert.Equal("CardKey.Sent", result.Message);
+        Assert.Equal(1, result.GeneratedCount);
+        var card = await db.Buyers.SingleAsync();
+        Assert.Equal(5, card.SaleId);
+        Assert.Equal(CardSendStatus.Sent, card.CardSendStatus);
+        Assert.NotNull(card.CardSentAt);
+        Assert.Equal(1, await db.AuditLogs.CountAsync(a => a.Action == "AdminSendCardKeys"));
+    }
+
+    [Fact]
+    public async Task SendBatchSendsMultiple()
+    {
+        await using var db = CreateDb();
+        SeedSale(db, id: 5, name: "Alice");
+        db.Buyers.AddRange(
+            new Buyer { Id = 1, CardNo = "c1", CardSendStatus = CardSendStatus.NotSent },
+            new Buyer { Id = 2, CardNo = "c2", CardSendStatus = CardSendStatus.NotSent });
+        await db.SaveChangesAsync();
+        var service = new CardKeyService(db, new CardGenerationService());
+
+        var result = await service.SendAsync(new[] { 1L, 2L }, saleId: 5, actingAdminId: 7);
+
+        Assert.True(result.Success);
+        Assert.Equal(2, result.GeneratedCount);
+        Assert.All(await db.Buyers.ToListAsync(), c => Assert.Equal(CardSendStatus.Sent, c.CardSendStatus));
+    }
+
+    [Fact]
+    public async Task SendSkipsAlreadySentCards()
+    {
+        await using var db = CreateDb();
+        SeedSale(db, id: 5, name: "Alice");
+        SeedSale(db, id: 6, name: "Bob");
+        db.Buyers.Add(new Buyer { Id = 1, CardNo = "c1", CardSendStatus = CardSendStatus.Sent, SaleId = 6 });
+        await db.SaveChangesAsync();
+        var service = new CardKeyService(db, new CardGenerationService());
+
+        var result = await service.SendAsync(new[] { 1L }, saleId: 5, actingAdminId: 7);
+
+        Assert.False(result.Success);
+        Assert.Equal("CardKey.SendNoneSelected", result.Message);
+        var card = await db.Buyers.SingleAsync();
+        Assert.Equal(6, card.SaleId); // 原销售未被覆盖
+    }
+
+    [Fact]
+    public async Task SendRejectsNonSaleSaleId()
+    {
+        await using var db = CreateDb();
+        db.Users.Add(new AppUser { Id = 9, UserName = "sup", DisplayName = "Sup", Role = UserRole.Supplier });
+        db.Buyers.Add(new Buyer { Id = 1, CardNo = "c1", CardSendStatus = CardSendStatus.NotSent });
+        await db.SaveChangesAsync();
+        var service = new CardKeyService(db, new CardGenerationService());
+
+        var result = await service.SendAsync(new[] { 1L }, saleId: 9, actingAdminId: 7);
+
+        Assert.False(result.Success);
+        Assert.Equal("CardKey.SaleInvalid", result.Message);
+        Assert.Equal(CardSendStatus.NotSent, (await db.Buyers.SingleAsync()).CardSendStatus);
+    }
+
+    [Fact]
+    public async Task SendWithNoEligibleCardsReturnsNoneSelected()
+    {
+        await using var db = CreateDb();
+        SeedSale(db, id: 5, name: "Alice");
+        await db.SaveChangesAsync();
+        var service = new CardKeyService(db, new CardGenerationService());
+
+        var result = await service.SendAsync(Array.Empty<long>(), saleId: 5, actingAdminId: 7);
+
+        Assert.False(result.Success);
+        Assert.Equal("CardKey.SendNoneSelected", result.Message);
+    }
+
+    [Fact]
+    public async Task ListFiltersBySendStatus()
+    {
+        await using var db = CreateDb();
+        db.Buyers.AddRange(
+            new Buyer { Id = 1, CardNo = "c1", CardSendStatus = CardSendStatus.NotSent },
+            new Buyer { Id = 2, CardNo = "c2", CardSendStatus = CardSendStatus.Sent, SaleId = null });
+        await db.SaveChangesAsync();
+        var service = new CardKeyService(db, new CardGenerationService());
+
+        var notSent = await service.ListAsync(null, null, null, CardSendStatus.NotSent);
+        Assert.Equal(new[] { 1L }, notSent.Select(c => c.Id).ToArray());
+
+        var sent = await service.ListAsync(null, null, null, CardSendStatus.Sent);
+        Assert.Equal(new[] { 2L }, sent.Select(c => c.Id).ToArray());
+    }
+
     private static AppUser SeedSale(WebMailDbContext db, long id, string name)
     {
         var user = new AppUser { Id = id, UserName = $"u{id}", DisplayName = name, Role = UserRole.Sales };

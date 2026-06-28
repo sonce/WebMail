@@ -10,10 +10,12 @@ public sealed record CardKeyListItem(
     long Id,
     string CardNo,
     CardStatus Status,
+    CardSendStatus SendStatus,
     long? SaleId,
     string? SaleDisplayName,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? UsedAt);
+    DateTimeOffset? UsedAt,
+    DateTimeOffset? SentAt);
 
 public sealed record SaleOption(long Id, string DisplayName);
 
@@ -101,12 +103,58 @@ public sealed class CardKeyService
         return new(true, "CardKey.Deleted");
     }
 
-    public async Task<IReadOnlyList<CardKeyListItem>> ListAsync(CardStatus? status, long? saleId, string? cardNo)
+    public async Task<CardKeyResult> SendAsync(
+        IReadOnlyCollection<long> buyerIds, long saleId, long? actingAdminId)
+    {
+        if (buyerIds is null || buyerIds.Count == 0)
+        {
+            return new(false, "CardKey.SendNoneSelected");
+        }
+
+        if (!await _db.Users.AnyAsync(u => u.Id == saleId && u.Role == UserRole.Sales))
+        {
+            return new(false, "CardKey.SaleInvalid");
+        }
+
+        var targets = await _db.Buyers
+            .Where(b => buyerIds.Contains(b.Id)
+                && !b.IsDeleted
+                && b.CardSendStatus == CardSendStatus.NotSent)
+            .ToListAsync();
+        if (targets.Count == 0)
+        {
+            return new(false, "CardKey.SendNoneSelected");
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        foreach (var buyer in targets)
+        {
+            buyer.SaleId = saleId;
+            buyer.CardSendStatus = CardSendStatus.Sent;
+            buyer.CardSentAt = now;
+        }
+
+        _db.AuditLogs.Add(new AuditLog
+        {
+            Action = "AdminSendCardKeys",
+            UserId = actingAdminId,
+            Details = $"sale={saleId};ids={string.Join(",", targets.Select(b => b.Id))}"
+        });
+        await _db.SaveChangesAsync();
+        return new(true, "CardKey.Sent", targets.Count);
+    }
+
+    public async Task<IReadOnlyList<CardKeyListItem>> ListAsync(
+        CardStatus? status, long? saleId, string? cardNo, CardSendStatus? sendStatus = null)
     {
         var query = _db.Buyers.Where(b => !b.IsDeleted);
         if (status is not null)
         {
             query = query.Where(b => b.CardStatus == status);
+        }
+        if (sendStatus is not null)
+        {
+            query = query.Where(b => b.CardSendStatus == sendStatus);
         }
         if (saleId is not null)
         {
@@ -126,10 +174,12 @@ public sealed class CardKeyService
             b.Id,
             b.CardNo,
             b.CardStatus,
+            b.CardSendStatus,
             b.SaleId,
             b.SaleId is not null && saleNames.TryGetValue(b.SaleId.Value, out var name) ? name : null,
             b.CreatedAt,
-            b.CardUsedAt)).ToList();
+            b.CardUsedAt,
+            b.CardSentAt)).ToList();
     }
 
     public async Task<IReadOnlyList<SaleOption>> ListSalesAsync()
