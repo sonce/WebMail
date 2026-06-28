@@ -183,6 +183,28 @@ public sealed class CardKeyServiceTests
     }
 
     [Fact]
+    public async Task SendMixedBatchSendsOnlyNotSentAndPreservesSent()
+    {
+        await using var db = CreateDb();
+        SeedSale(db, id: 5, name: "Alice");
+        db.Buyers.AddRange(
+            new Buyer { Id = 1, CardNo = "c1", CardSendStatus = CardSendStatus.NotSent },
+            new Buyer { Id = 2, CardNo = "c2", CardSendStatus = CardSendStatus.Sent, SaleId = 6 });
+        await db.SaveChangesAsync();
+        var service = new CardKeyService(db, new CardGenerationService());
+
+        var result = await service.SendAsync(new[] { 1L, 2L }, saleId: 5, actingAdminId: 7);
+
+        Assert.True(result.Success);
+        Assert.Equal(1, result.GeneratedCount);
+        var c1 = await db.Buyers.SingleAsync(b => b.Id == 1);
+        var c2 = await db.Buyers.SingleAsync(b => b.Id == 2);
+        Assert.Equal(CardSendStatus.Sent, c1.CardSendStatus);
+        Assert.Equal(5, c1.SaleId);
+        Assert.Equal(6, c2.SaleId); // already-sent card untouched
+    }
+
+    [Fact]
     public async Task SendSkipsAlreadySentCards()
     {
         await using var db = CreateDb();

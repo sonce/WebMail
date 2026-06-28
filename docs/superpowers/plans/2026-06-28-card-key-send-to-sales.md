@@ -117,7 +117,8 @@ git commit -m "feat(cardkey): add CardSendStatus and stamp it on generate"
 > ⚠️ 部署注记（不在本任务执行，仅记录）：`EnsureCreated` 不会在已有表加列。开发环境删 `webmail.dev.db` 重建；生产执行
 > `ALTER TABLE Buyers ADD COLUMN CardSendStatus INTEGER NOT NULL DEFAULT 1;`
 > `ALTER TABLE Buyers ADD COLUMN CardSentAt TEXT NULL;`
-> 历史数据可选校正：`UPDATE Buyers SET CardSendStatus = 2 WHERE SaleId IS NOT NULL;`
+> 历史数据强制校正（任何已有卡密数据**必须**执行，非可选）：`UPDATE Buyers SET CardSendStatus = 2 WHERE SaleId IS NOT NULL;`
+> 原因：否则已有 `SaleId` 的历史卡会显示为「未发送」并被重复发送，覆盖其原始销售。
 
 ---
 

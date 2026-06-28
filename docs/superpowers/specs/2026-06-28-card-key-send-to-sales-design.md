@@ -69,8 +69,9 @@ public DateTimeOffset? CardSentAt { get; set; }                               //
 > 开发环境删除 `webmail.dev.db` 重建；生产若已有数据需手动
 > `ALTER TABLE Buyers ADD COLUMN CardSendStatus INTEGER NOT NULL DEFAULT 1;`
 > 与 `ALTER TABLE Buyers ADD COLUMN CardSentAt TEXT NULL;`（或引入迁移）。
-> 既有数据语义：`SaleId` 非空的历史卡视为已发送——重建/迁移后如需校正，可
-> 一次性 `UPDATE Buyers SET CardSendStatus=2 WHERE SaleId IS NOT NULL;`（实现计划列为可选步骤）。
+> 既有数据语义：`SaleId` 非空的历史卡视为已发送——重建/迁移后**必须**对任何已有卡密数据
+> 一次性执行 `UPDATE Buyers SET CardSendStatus=2 WHERE SaleId IS NOT NULL;`（强制步骤，非可选）。
+> 原因：否则这些已有 `SaleId` 的历史卡会显示为「未发送」并被重复发送，从而覆盖其原始销售。
 
 ## 5. 服务层改动（`CardKeyService`）
 
