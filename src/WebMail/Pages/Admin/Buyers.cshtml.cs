@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
+using WebMail;
 using WebMail.Data;
 using WebMail.Domain;
 
@@ -12,10 +14,12 @@ namespace WebMail.Pages.Admin;
 public class BuyersModel : PageModel
 {
     private readonly WebMailDbContext _db;
+    private readonly IStringLocalizer<SharedResource> _loc;
 
-    public BuyersModel(WebMailDbContext db)
+    public BuyersModel(WebMailDbContext db, IStringLocalizer<SharedResource> loc)
     {
         _db = db;
+        _loc = loc;
     }
 
     public IReadOnlyList<Domain.Buyer> Buyers { get; private set; } = Array.Empty<Domain.Buyer>();
@@ -45,11 +49,11 @@ public class BuyersModel : PageModel
                 Details = $"buyer={id}"
             });
             await _db.SaveChangesAsync();
-            Message = "已删除买家。";
+            Message = _loc["Admin.Buyers.Deleted"];
         }
         else
         {
-            Message = "无法删除该买家。";
+            Message = _loc["Admin.Buyers.DeleteFailed"];
         }
 
         await LoadAsync();
@@ -70,11 +74,11 @@ public class BuyersModel : PageModel
                 Details = $"buyer={id};decision={decision}"
             });
             await _db.SaveChangesAsync();
-            Message = "已更新审核状态。";
+            Message = _loc["Admin.Buyers.Reviewed"];
         }
         else
         {
-            Message = "无法审核该买家。";
+            Message = _loc["Admin.Buyers.ReviewFailed"];
         }
 
         await LoadAsync();

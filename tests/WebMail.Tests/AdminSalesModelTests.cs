@@ -60,7 +60,7 @@ public sealed class AdminSalesModelTests
 
     private static SalesModel CreateModel(WebMailDbContext db)
     {
-        var model = new SalesModel(new UserAdminService(db, new PasswordHasher<AppUser>()));
+        var model = new SalesModel(new UserAdminService(db, new PasswordHasher<AppUser>()), TestLocalizer.Shared);
         var ctx = new DefaultHttpContext
         {
             User = new ClaimsPrincipal(new ClaimsIdentity(

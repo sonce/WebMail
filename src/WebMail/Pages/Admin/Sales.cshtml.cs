@@ -2,6 +2,8 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
+using WebMail;
 using WebMail.Domain;
 using WebMail.Services;
 
@@ -11,11 +13,16 @@ namespace WebMail.Pages.Admin;
 public class SalesModel : PageModel
 {
     private readonly UserAdminService _users;
+    private readonly IStringLocalizer<SharedResource> _loc;
 
-    public SalesModel(UserAdminService users) => _users = users;
+    public SalesModel(UserAdminService users, IStringLocalizer<SharedResource> loc)
+    {
+        _users = users;
+        _loc = loc;
+    }
 
     protected virtual UserRole Role => UserRole.Sales;
-    public string RoleTitle => Role == UserRole.Supplier ? "供应商" : "销售员";
+    public string RoleNounKey => Role == UserRole.Supplier ? "RoleNoun.Supplier" : "RoleNoun.Sales";
 
     public IReadOnlyList<UserListItem> Users { get; private set; } = Array.Empty<UserListItem>();
     public string? Message { get; private set; }
@@ -28,21 +35,21 @@ public class SalesModel : PageModel
 
     public async Task<IActionResult> OnPostCreateAsync()
     {
-        Message = (await _users.CreateAsync(Role, NewUserName, NewDisplayName, NewPassword, AdminId())).Message;
+        Message = _loc[(await _users.CreateAsync(Role, NewUserName, NewDisplayName, NewPassword, AdminId())).Message];
         await LoadAsync();
         return Page();
     }
 
     public async Task<IActionResult> OnPostResetPasswordAsync(long id, string password)
     {
-        Message = (await _users.ResetPasswordAsync(id, password, AdminId(), Role)).Message;
+        Message = _loc[(await _users.ResetPasswordAsync(id, password, AdminId(), Role)).Message];
         await LoadAsync();
         return Page();
     }
 
     public async Task<IActionResult> OnPostSetActiveAsync(long id, bool isActive)
     {
-        Message = (await _users.SetActiveAsync(id, isActive, AdminId(), Role)).Message;
+        Message = _loc[(await _users.SetActiveAsync(id, isActive, AdminId(), Role)).Message];
         await LoadAsync();
         return Page();
     }

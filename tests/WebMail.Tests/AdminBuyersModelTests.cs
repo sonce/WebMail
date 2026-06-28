@@ -101,7 +101,7 @@ public sealed class AdminBuyersModelTests
 
     private static AdminBuyers CreateModel(WebMailDbContext db, long adminId)
     {
-        var model = new AdminBuyers(db);
+        var model = new AdminBuyers(db, TestLocalizer.Shared);
         var httpContext = new DefaultHttpContext
         {
             User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, adminId.ToString())], "test"))

@@ -2,10 +2,10 @@
 @using WebMail.Domain
 @model WebMail.Pages.Admin.BuyersModel
 @{
-    ViewData["Title"] = "买家列表（管理员）";
+    ViewData["Title"] = L["Admin.Buyers.Title"].Value;
 }
 
-<h1 class="display-6">买家列表（管理员）</h1>
+<h1 class="display-6">@L["Admin.Buyers.Title"]</h1>
 
 @if (!string.IsNullOrEmpty(Model.Message))
 {
@@ -16,39 +16,39 @@
     <div class="col-auto">
         <select class="form-select" asp-for="StatusFilter"
                 asp-items="Html.GetEnumSelectList<WebMail.Domain.BuyerStatus>()">
-            <option value="">全部买家状态</option>
+            <option value="">@L["Filter.AllBuyerStatus"]</option>
         </select>
     </div>
     <div class="col-auto">
         <select class="form-select" asp-for="EmailFilter"
                 asp-items="Html.GetEnumSelectList<WebMail.Domain.EmailAuthorizationStatus>()">
-            <option value="">全部邮箱状态</option>
+            <option value="">@L["Filter.AllEmailStatus"]</option>
         </select>
     </div>
     <div class="col-auto">
-        <input class="form-control" asp-for="CardNo" placeholder="卡密关键字" />
+        <input class="form-control" asp-for="CardNo" placeholder="@L["Filter.CardKeyword"]" />
     </div>
     <div class="col-auto">
-        <button type="submit" class="btn btn-outline-primary">筛选</button>
-        <a class="btn btn-outline-secondary" asp-page="/Admin/Buyers">重置</a>
+        <button type="submit" class="btn btn-outline-primary">@L["Common.Filter"]</button>
+        <a class="btn btn-outline-secondary" asp-page="/Admin/Buyers">@L["Common.Reset"]</a>
     </div>
 </form>
 
 @if (Model.Buyers.Count == 0)
 {
-    <p>暂无买家。</p>
+    <p>@L["Common.NoBuyers"]</p>
 }
 else
 {
     <table class="table table-striped">
         <thead>
             <tr>
-                <th>卡密</th>
-                <th>邮箱状态</th>
-                <th>买家状态</th>
-                <th>供应商状态</th>
-                <th>创建时间</th>
-                <th>操作</th>
+                <th>@L["Table.CardNo"]</th>
+                <th>@L["Table.EmailStatus"]</th>
+                <th>@L["Table.BuyerStatus"]</th>
+                <th>@L["Table.SupplierStatus"]</th>
+                <th>@L["Table.CreatedAt"]</th>
+                <th>@L["Table.Operations"]</th>
             </tr>
         </thead>
         <tbody>
@@ -66,17 +66,17 @@ else
                             <div class="d-flex gap-2">
                                 <form method="post" asp-page-handler="Approve">
                                     <input type="hidden" name="id" value="@buyer.Id" />
-                                    <button type="submit" class="btn btn-sm btn-success">通过</button>
+                                    <button type="submit" class="btn btn-sm btn-success">@L["Action.Approve"]</button>
                                 </form>
                                 <form method="post" asp-page-handler="Reject">
                                     <input type="hidden" name="id" value="@buyer.Id" />
-                                    <button type="submit" class="btn btn-sm btn-danger">拒绝</button>
+                                    <button type="submit" class="btn btn-sm btn-danger">@L["Action.Reject"]</button>
                                 </form>
                             </div>
                         }
                         <form method="post" asp-page-handler="Delete" class="mt-1">
                             <input type="hidden" name="id" value="@buyer.Id" />
-                            <button type="submit" class="btn btn-sm btn-outline-danger">删除</button>
+                            <button type="submit" class="btn btn-sm btn-outline-danger">@L["Common.Delete"]</button>
                         </form>
                     </td>
                 </tr>

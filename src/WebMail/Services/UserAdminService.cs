@@ -29,17 +29,17 @@ public sealed class UserAdminService
         userName = (userName ?? string.Empty).Trim();
         if (string.IsNullOrWhiteSpace(userName))
         {
-            return new(false, "用户名不能为空。");
+            return new(false, "User.UserNameRequired");
         }
         if ((password ?? string.Empty).Length < MinPasswordLength)
         {
-            return new(false, $"密码至少需要 {MinPasswordLength} 位。");
+            return new(false, "User.PasswordTooShort");
         }
 
         var normalized = userName.ToLower();
         if (await _db.Users.AnyAsync(u => u.UserName.ToLower() == normalized))
         {
-            return new(false, "用户名已存在。");
+            return new(false, "User.UserNameExists");
         }
 
         var user = new AppUser
@@ -58,20 +58,20 @@ public sealed class UserAdminService
             Details = $"role={role};user={userName}"
         });
         await _db.SaveChangesAsync();
-        return new(true, "已创建账号。");
+        return new(true, "User.Created");
     }
 
     public async Task<UserAdminResult> ResetPasswordAsync(long userId, string newPassword, long? actingAdminId, UserRole? expectedRole = null)
     {
         if ((newPassword ?? string.Empty).Length < MinPasswordLength)
         {
-            return new(false, $"密码至少需要 {MinPasswordLength} 位。");
+            return new(false, "User.PasswordTooShort");
         }
 
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null || (expectedRole is not null && user.Role != expectedRole))
         {
-            return new(false, "账号不存在。");
+            return new(false, "User.NotFound");
         }
 
         user.PasswordHash = _hasher.HashPassword(user, newPassword!);
@@ -82,7 +82,7 @@ public sealed class UserAdminService
             Details = $"user={userId}"
         });
         await _db.SaveChangesAsync();
-        return new(true, "已重置密码。");
+        return new(true, "User.PasswordReset");
     }
 
     public async Task<UserAdminResult> SetActiveAsync(long userId, bool isActive, long? actingAdminId, UserRole? expectedRole = null)
@@ -90,7 +90,7 @@ public sealed class UserAdminService
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null || (expectedRole is not null && user.Role != expectedRole))
         {
-            return new(false, "账号不存在。");
+            return new(false, "User.NotFound");
         }
 
         user.IsActive = isActive;
@@ -101,7 +101,7 @@ public sealed class UserAdminService
             Details = $"user={userId};active={isActive}"
         });
         await _db.SaveChangesAsync();
-        return new(true, isActive ? "已启用账号。" : "已禁用账号。");
+        return new(true, isActive ? "User.Enabled" : "User.Disabled");
     }
 
     public async Task<IReadOnlyList<UserListItem>> ListByRoleAsync(UserRole role)

@@ -58,7 +58,7 @@ public sealed class AdminSuppliersModelTests
 
     private static SuppliersModel CreateModel(WebMailDbContext db)
     {
-        var model = new SuppliersModel(new UserAdminService(db, new PasswordHasher<AppUser>()));
+        var model = new SuppliersModel(new UserAdminService(db, new PasswordHasher<AppUser>()), TestLocalizer.Shared);
         var ctx = new DefaultHttpContext
         {
             User = new ClaimsPrincipal(new ClaimsIdentity(

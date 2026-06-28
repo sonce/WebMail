@@ -1,6 +1,6 @@
 @model WebMail.Pages.Admin.SalesModel
 
-<h1 class="display-6">@(Model.RoleTitle)管理</h1>
+<h1 class="display-6">@L["Admin.Users.Title", L[Model.RoleNounKey].Value]</h1>
 
 @if (!string.IsNullOrEmpty(Model.Message))
 {
@@ -9,19 +9,19 @@
 
 <div class="card mb-4">
     <div class="card-body">
-        <h2 class="h5">新建@(Model.RoleTitle)</h2>
+        <h2 class="h5">@L["Admin.Users.CreateHeading", L[Model.RoleNounKey].Value]</h2>
         <form method="post" asp-page-handler="Create" class="row g-2">
             <div class="col-auto">
-                <input class="form-control" asp-for="NewUserName" placeholder="用户名" />
+                <input class="form-control" asp-for="NewUserName" placeholder="@L["Field.UserName"]" />
             </div>
             <div class="col-auto">
-                <input class="form-control" asp-for="NewDisplayName" placeholder="显示名" />
+                <input class="form-control" asp-for="NewDisplayName" placeholder="@L["Field.DisplayName"]" />
             </div>
             <div class="col-auto">
-                <input class="form-control" type="password" asp-for="NewPassword" placeholder="初始密码（≥6位）" />
+                <input class="form-control" type="password" asp-for="NewPassword" placeholder="@L["Field.InitialPassword"]" />
             </div>
             <div class="col-auto">
-                <button type="submit" class="btn btn-primary">创建</button>
+                <button type="submit" class="btn btn-primary">@L["Common.Create"]</button>
             </div>
         </form>
     </div>
@@ -29,19 +29,19 @@
 
 @if (Model.Users.Count == 0)
 {
-    <p>暂无@(Model.RoleTitle)。</p>
+    <p>@L["Admin.Users.Empty", L[Model.RoleNounKey].Value]</p>
 }
 else
 {
     <table class="table table-striped">
         <thead>
             <tr>
-                <th>用户名</th>
-                <th>显示名</th>
-                <th>状态</th>
-                <th>关联买家数</th>
-                <th>创建时间</th>
-                <th>操作</th>
+                <th>@L["Table.UserName"]</th>
+                <th>@L["Table.DisplayName"]</th>
+                <th>@L["Table.Status"]</th>
+                <th>@L["Table.LinkedBuyers"]</th>
+                <th>@L["Table.CreatedAt"]</th>
+                <th>@L["Table.Operations"]</th>
             </tr>
         </thead>
         <tbody>
@@ -50,21 +50,21 @@ else
                 <tr>
                     <td>@u.UserName</td>
                     <td>@u.DisplayName</td>
-                    <td>@(u.IsActive ? "启用" : "禁用")</td>
+                    <td>@(u.IsActive ? L["Status.Enabled"].Value : L["Status.Disabled"].Value)</td>
                     <td>@u.LinkedBuyerCount</td>
                     <td>@u.CreatedAt</td>
                     <td>
                         <div class="d-flex gap-2">
                             <form method="post" asp-page-handler="ResetPassword" class="d-flex gap-1">
                                 <input type="hidden" name="id" value="@u.Id" />
-                                <input class="form-control form-control-sm" type="password" name="password" placeholder="新密码" />
-                                <button type="submit" class="btn btn-sm btn-outline-secondary">重置密码</button>
+                                <input class="form-control form-control-sm" type="password" name="password" placeholder="@L["Field.NewPassword"]" />
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">@L["Action.ResetPassword"]</button>
                             </form>
                             <form method="post" asp-page-handler="SetActive">
                                 <input type="hidden" name="id" value="@u.Id" />
                                 <input type="hidden" name="isActive" value="@((!u.IsActive).ToString().ToLower())" />
                                 <button type="submit" class="btn btn-sm @(u.IsActive ? "btn-outline-danger" : "btn-outline-success")">
-                                    @(u.IsActive ? "禁用" : "启用")
+                                    @(u.IsActive ? L["Action.Disable"].Value : L["Action.Enable"].Value)
                                 </button>
                             </form>
                         </div>
