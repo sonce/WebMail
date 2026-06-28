@@ -1,11 +1,11 @@
 @page
 @model AccessDeniedModel
 @{
-    ViewData["Title"] = "无权访问";
+    ViewData["Title"] = L["AccessDenied.Title"].Value;
 }
 
 <div class="text-center">
-    <h1 class="h3">无权访问</h1>
-    <p>当前账号没有访问该页面的权限。</p>
-    <a asp-page="/Index">返回首页</a>
+    <h1 class="h3">@L["AccessDenied.Title"]</h1>
+    <p>@L["AccessDenied.Body"]</p>
+    <a asp-page="/Index">@L["AccessDenied.BackHome"]</a>
 </div>

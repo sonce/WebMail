@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
+using WebMail;
 using WebMail.Data;
 using WebMail.Domain;
 using WebMail.Services.Auth;
@@ -15,11 +17,13 @@ public class LoginModel : PageModel
 {
     private readonly WebMailDbContext _db;
     private readonly IPasswordHasher<AppUser> _hasher;
+    private readonly IStringLocalizer<SharedResource> _loc;
 
-    public LoginModel(WebMailDbContext db, IPasswordHasher<AppUser> hasher)
+    public LoginModel(WebMailDbContext db, IPasswordHasher<AppUser> hasher, IStringLocalizer<SharedResource> loc)
     {
         _db = db;
         _hasher = hasher;
+        _loc = loc;
     }
 
     [BindProperty] public string UserName { get; set; } = string.Empty;
@@ -38,13 +42,13 @@ public class LoginModel : PageModel
         if (user is null ||
             _hasher.VerifyHashedPassword(user, user.PasswordHash, Password) == PasswordVerificationResult.Failed)
         {
-            ErrorMessage = "用户名或密码错误";
+            ErrorMessage = _loc["Login.InvalidCredentials"];
             return Page();
         }
 
         if (!user.IsActive)
         {
-            ErrorMessage = "账号已被禁用";
+            ErrorMessage = _loc["Login.AccountDisabled"];
             return Page();
         }
 

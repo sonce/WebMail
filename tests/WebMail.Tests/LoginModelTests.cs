@@ -19,7 +19,7 @@ public sealed class LoginModelTests
         var hasher = new PasswordHasher<AppUser>();
         await SeedUser(db, hasher, "sue", "pw", UserRole.Sales);
         var (ctx, auth) = TestHttpContext.WithAuth();
-        var model = new LoginModel(db, hasher)
+        var model = new LoginModel(db, hasher, TestLocalizer.Shared)
         {
             PageContext = new PageContext { HttpContext = ctx },
             UserName = "sue",
@@ -41,7 +41,7 @@ public sealed class LoginModelTests
         var hasher = new PasswordHasher<AppUser>();
         await SeedUser(db, hasher, "sue", "pw", UserRole.Sales);
         var (ctx, auth) = TestHttpContext.WithAuth();
-        var model = new LoginModel(db, hasher)
+        var model = new LoginModel(db, hasher, TestLocalizer.Shared)
         {
             PageContext = new PageContext { HttpContext = ctx },
             UserName = "sue",
@@ -51,7 +51,7 @@ public sealed class LoginModelTests
         var result = await model.OnPostAsync();
 
         Assert.IsType<PageResult>(result);
-        Assert.Equal("用户名或密码错误", model.ErrorMessage);
+        Assert.Equal("Login.InvalidCredentials", model.ErrorMessage);
         Assert.Null(auth.SignedInPrincipal);
     }
 
@@ -61,7 +61,7 @@ public sealed class LoginModelTests
         await using var db = CreateDb();
         var hasher = new PasswordHasher<AppUser>();
         var (ctx, auth) = TestHttpContext.WithAuth();
-        var model = new LoginModel(db, hasher)
+        var model = new LoginModel(db, hasher, TestLocalizer.Shared)
         {
             PageContext = new PageContext { HttpContext = ctx },
             UserName = "nobody",
@@ -71,7 +71,7 @@ public sealed class LoginModelTests
         var result = await model.OnPostAsync();
 
         Assert.IsType<PageResult>(result);
-        Assert.Equal("用户名或密码错误", model.ErrorMessage);
+        Assert.Equal("Login.InvalidCredentials", model.ErrorMessage);
         Assert.Null(auth.SignedInPrincipal);
     }
 
@@ -82,7 +82,7 @@ public sealed class LoginModelTests
         var hasher = new PasswordHasher<AppUser>();
         await SeedUser(db, hasher, "sue", "pw", UserRole.Sales);
         var (ctx, _) = TestHttpContext.WithAuth();
-        var model = new LoginModel(db, hasher)
+        var model = new LoginModel(db, hasher, TestLocalizer.Shared)
         {
             PageContext = new PageContext { HttpContext = ctx },
             UserName = "sue",
@@ -102,7 +102,7 @@ public sealed class LoginModelTests
         var hasher = new PasswordHasher<AppUser>();
         await SeedUser(db, hasher, "sue", "pw", UserRole.Sales);
         var (ctx, _) = TestHttpContext.WithAuth();
-        var model = new LoginModel(db, hasher)
+        var model = new LoginModel(db, hasher, TestLocalizer.Shared)
         {
             PageContext = new PageContext { HttpContext = ctx },
             UserName = "sue",
@@ -122,7 +122,7 @@ public sealed class LoginModelTests
         var hasher = new PasswordHasher<AppUser>();
         await SeedUser(db, hasher, "sue", "pw", UserRole.Sales);
         var (ctx, auth) = TestHttpContext.WithAuth();
-        var model = new LoginModel(db, hasher)
+        var model = new LoginModel(db, hasher, TestLocalizer.Shared)
         {
             PageContext = new PageContext { HttpContext = ctx },
             UserName = "SUE",
@@ -145,7 +145,7 @@ public sealed class LoginModelTests
         disabled.IsActive = false;
         await db.SaveChangesAsync();
         var (ctx, auth) = TestHttpContext.WithAuth();
-        var model = new LoginModel(db, hasher)
+        var model = new LoginModel(db, hasher, TestLocalizer.Shared)
         {
             PageContext = new PageContext { HttpContext = ctx },
             UserName = "sue",
@@ -155,7 +155,7 @@ public sealed class LoginModelTests
         var result = await model.OnPostAsync();
 
         Assert.IsType<PageResult>(result);
-        Assert.Equal("账号已被禁用", model.ErrorMessage);
+        Assert.Equal("Login.AccountDisabled", model.ErrorMessage);
         Assert.Null(auth.SignedInPrincipal);
     }
 

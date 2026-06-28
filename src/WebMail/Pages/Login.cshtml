@@ -1,12 +1,12 @@
 @page
 @model LoginModel
 @{
-    ViewData["Title"] = "登录";
+    ViewData["Title"] = L["Login.Title"].Value;
 }
 
 <div class="row justify-content-center">
     <div class="col-md-4">
-        <h1 class="h3 mb-3">后台登录</h1>
+        <h1 class="h3 mb-3">@L["Login.Heading"]</h1>
         @if (Model.ErrorMessage is not null)
         {
             <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
@@ -14,14 +14,14 @@
         <form method="post">
             <input type="hidden" asp-for="ReturnUrl" />
             <div class="mb-3">
-                <label class="form-label" asp-for="UserName">用户名</label>
+                <label class="form-label" asp-for="UserName">@L["Login.UserName"]</label>
                 <input class="form-control" asp-for="UserName" autofocus />
             </div>
             <div class="mb-3">
-                <label class="form-label" asp-for="Password">密码</label>
+                <label class="form-label" asp-for="Password">@L["Login.Password"]</label>
                 <input class="form-control" type="password" asp-for="Password" />
             </div>
-            <button type="submit" class="btn btn-primary w-100">登录</button>
+            <button type="submit" class="btn btn-primary w-100">@L["Login.Submit"]</button>
         </form>
     </div>
 </div>
