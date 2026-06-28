@@ -1,5 +1,9 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+﻿@{
+    var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+    var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.Name;
+}
+<!DOCTYPE html>
+<html lang="@System.Globalization.CultureInfo.CurrentUICulture.Name">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,7 +16,7 @@
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container">
-                <a class="navbar-brand" asp-area="" asp-page="/Index">WebMail</a>
+                <a class="navbar-brand" asp-area="" asp-page="/Index">@L["Brand.Name"]</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -20,42 +24,56 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Index">Home</a>
+                            <a class="nav-link text-dark" asp-area="" asp-page="/Index">@L["Nav.Home"]</a>
                         </li>
                         @if (User.IsInRole("Administrator"))
                         {
                             <li class="nav-item dropdown">
                                 <a class="nav-link text-dark dropdown-toggle" href="#" role="button"
-                                   data-bs-toggle="dropdown" aria-expanded="false">管理后台</a>
+                                   data-bs-toggle="dropdown" aria-expanded="false">@L["Nav.AdminConsole"]</a>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" asp-page="/Admin/Sales">销售员管理</a></li>
-                                    <li><a class="dropdown-item" asp-page="/Admin/Suppliers">供应商管理</a></li>
-                                    <li><a class="dropdown-item" asp-page="/Admin/Buyers">买家管理</a></li>
+                                    <li><a class="dropdown-item" asp-page="/Admin/Sales">@L["Nav.Admin.Sales"]</a></li>
+                                    <li><a class="dropdown-item" asp-page="/Admin/Suppliers">@L["Nav.Admin.Suppliers"]</a></li>
+                                    <li><a class="dropdown-item" asp-page="/Admin/Buyers">@L["Nav.Admin.Buyers"]</a></li>
                                 </ul>
                             </li>
                         }
                         @if (User.IsInRole("Sales"))
                         {
-                            <li class="nav-item"><a class="nav-link text-dark" asp-page="/Sales/Buyers">销售后台</a></li>
+                            <li class="nav-item"><a class="nav-link text-dark" asp-page="/Sales/Buyers">@L["Nav.SalesConsole"]</a></li>
                         }
                         @if (User.IsInRole("Supplier"))
                         {
-                            <li class="nav-item"><a class="nav-link text-dark" asp-page="/Supplier/Buyers">供应商后台</a></li>
+                            <li class="nav-item"><a class="nav-link text-dark" asp-page="/Supplier/Buyers">@L["Nav.SupplierConsole"]</a></li>
                         }
                     </ul>
                     <ul class="navbar-nav">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link text-dark dropdown-toggle" href="#" role="button"
+                               data-bs-toggle="dropdown" aria-expanded="false">@L["Lang.Label"]</a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item @(currentCulture == "zh-CN" ? "active" : "")"
+                                       asp-page="/Culture/Set" asp-route-culture="zh-CN" asp-route-returnUrl="@returnUrl">@L["Lang.Chinese"]</a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item @(currentCulture == "en" ? "active" : "")"
+                                       asp-page="/Culture/Set" asp-route-culture="en" asp-route-returnUrl="@returnUrl">@L["Lang.English"]</a>
+                                </li>
+                            </ul>
+                        </li>
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item"><span class="nav-link text-dark">@User.Identity!.Name</span></li>
                             <li class="nav-item">
                                 <form method="post" asp-page="/Logout" class="d-inline">
-                                    <button type="submit" class="btn btn-link nav-link text-dark">退出</button>
+                                    <button type="submit" class="btn btn-link nav-link text-dark">@L["Nav.Logout"]</button>
                                 </form>
                             </li>
                         }
                         else
                         {
-                            <li class="nav-item"><a class="nav-link text-dark" asp-page="/Login">登录</a></li>
+                            <li class="nav-item"><a class="nav-link text-dark" asp-page="/Login">@L["Nav.Login"]</a></li>
                         }
                     </ul>
                 </div>
@@ -70,7 +88,7 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; 2026 - WebMail - <a asp-area="" asp-page="/Privacy">Privacy</a>
+            &copy; 2026 - WebMail - <a asp-area="" asp-page="/Privacy">@L["Footer.Privacy"]</a>
         </div>
     </footer>
 
