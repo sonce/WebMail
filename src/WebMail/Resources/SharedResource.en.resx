@@ -4,5 +4,122 @@
   <resheader name="version"><value>2.0</value></resheader>
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
-  <data name="Probe.Ok" xml:space="preserve"><value>OK</value></data>
+  <data name="Brand.Name" xml:space="preserve"><value>WebMail</value></data>
+  <data name="Nav.Home" xml:space="preserve"><value>Home</value></data>
+  <data name="Nav.AdminConsole" xml:space="preserve"><value>Admin Console</value></data>
+  <data name="Nav.Admin.Sales" xml:space="preserve"><value>Sales Management</value></data>
+  <data name="Nav.Admin.Suppliers" xml:space="preserve"><value>Supplier Management</value></data>
+  <data name="Nav.Admin.Buyers" xml:space="preserve"><value>Buyer Management</value></data>
+  <data name="Nav.SalesConsole" xml:space="preserve"><value>Sales Console</value></data>
+  <data name="Nav.SupplierConsole" xml:space="preserve"><value>Supplier Console</value></data>
+  <data name="Nav.Login" xml:space="preserve"><value>Sign in</value></data>
+  <data name="Nav.Logout" xml:space="preserve"><value>Sign out</value></data>
+  <data name="Lang.Label" xml:space="preserve"><value>Language</value></data>
+  <data name="Lang.English" xml:space="preserve"><value>English</value></data>
+  <data name="Lang.Chinese" xml:space="preserve"><value>中文</value></data>
+  <data name="Footer.Privacy" xml:space="preserve"><value>Privacy</value></data>
+  <data name="Privacy.Title" xml:space="preserve"><value>Privacy Policy</value></data>
+  <data name="Privacy.Body" xml:space="preserve"><value>Use this page to detail your site's privacy policy.</value></data>
+  <data name="Login.Title" xml:space="preserve"><value>Sign in</value></data>
+  <data name="Login.Heading" xml:space="preserve"><value>Console Sign-in</value></data>
+  <data name="Login.UserName" xml:space="preserve"><value>Username</value></data>
+  <data name="Login.Password" xml:space="preserve"><value>Password</value></data>
+  <data name="Login.Submit" xml:space="preserve"><value>Sign in</value></data>
+  <data name="Login.InvalidCredentials" xml:space="preserve"><value>Incorrect username or password</value></data>
+  <data name="Login.AccountDisabled" xml:space="preserve"><value>Account is disabled</value></data>
+  <data name="AccessDenied.Title" xml:space="preserve"><value>Access denied</value></data>
+  <data name="AccessDenied.Body" xml:space="preserve"><value>Your account does not have permission to view this page.</value></data>
+  <data name="AccessDenied.BackHome" xml:space="preserve"><value>Back to home</value></data>
+  <data name="RoleNoun.Sales" xml:space="preserve"><value>Sales</value></data>
+  <data name="RoleNoun.Supplier" xml:space="preserve"><value>Supplier</value></data>
+  <data name="Common.Delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="Common.Reset" xml:space="preserve"><value>Reset</value></data>
+  <data name="Common.Filter" xml:space="preserve"><value>Filter</value></data>
+  <data name="Common.Create" xml:space="preserve"><value>Create</value></data>
+  <data name="Common.NoBuyers" xml:space="preserve"><value>No buyers yet.</value></data>
+  <data name="Common.BackToList" xml:space="preserve"><value>Back to list</value></data>
+  <data name="Common.NoMail" xml:space="preserve"><value>No mail yet.</value></data>
+  <data name="Table.CardNo" xml:space="preserve"><value>Card key</value></data>
+  <data name="Table.EmailStatus" xml:space="preserve"><value>Email status</value></data>
+  <data name="Table.BuyerStatus" xml:space="preserve"><value>Buyer status</value></data>
+  <data name="Table.SupplierStatus" xml:space="preserve"><value>Supplier status</value></data>
+  <data name="Table.SupplierProcessingStatus" xml:space="preserve"><value>Supplier processing status</value></data>
+  <data name="Table.CreatedAt" xml:space="preserve"><value>Created at</value></data>
+  <data name="Table.Operations" xml:space="preserve"><value>Actions</value></data>
+  <data name="Table.UserName" xml:space="preserve"><value>Username</value></data>
+  <data name="Table.DisplayName" xml:space="preserve"><value>Display name</value></data>
+  <data name="Table.Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Table.LinkedBuyers" xml:space="preserve"><value>Linked buyers</value></data>
+  <data name="Table.Source" xml:space="preserve"><value>Source</value></data>
+  <data name="Table.Sender" xml:space="preserve"><value>Sender</value></data>
+  <data name="Table.Subject" xml:space="preserve"><value>Subject</value></data>
+  <data name="Table.SentAt" xml:space="preserve"><value>Sent at</value></data>
+  <data name="Filter.AllBuyerStatus" xml:space="preserve"><value>All buyer statuses</value></data>
+  <data name="Filter.AllEmailStatus" xml:space="preserve"><value>All email statuses</value></data>
+  <data name="Filter.CardKeyword" xml:space="preserve"><value>Card key keyword</value></data>
+  <data name="Action.Approve" xml:space="preserve"><value>Approve</value></data>
+  <data name="Action.Reject" xml:space="preserve"><value>Reject</value></data>
+  <data name="Action.ResetPassword" xml:space="preserve"><value>Reset password</value></data>
+  <data name="Action.Enable" xml:space="preserve"><value>Enable</value></data>
+  <data name="Action.Disable" xml:space="preserve"><value>Disable</value></data>
+  <data name="Action.ViewMail" xml:space="preserve"><value>View mail</value></data>
+  <data name="Action.MarkFailed" xml:space="preserve"><value>Mark failed</value></data>
+  <data name="Action.MarkCompleted" xml:space="preserve"><value>Mark completed</value></data>
+  <data name="Action.AuthorizeGmail" xml:space="preserve"><value>Authorize Gmail</value></data>
+  <data name="Action.AuthorizeOutlook" xml:space="preserve"><value>Authorize Outlook</value></data>
+  <data name="Action.ReAuthorize" xml:space="preserve"><value>Re-authorize</value></data>
+  <data name="Action.ChangeEmail" xml:space="preserve"><value>Change email</value></data>
+  <data name="Action.ClearAuth" xml:space="preserve"><value>Clear authorization</value></data>
+  <data name="Status.Enabled" xml:space="preserve"><value>Enabled</value></data>
+  <data name="Status.Disabled" xml:space="preserve"><value>Disabled</value></data>
+  <data name="Field.UserName" xml:space="preserve"><value>Username</value></data>
+  <data name="Field.DisplayName" xml:space="preserve"><value>Display name</value></data>
+  <data name="Field.InitialPassword" xml:space="preserve"><value>Initial password (≥6 chars)</value></data>
+  <data name="Field.NewPassword" xml:space="preserve"><value>New password</value></data>
+  <data name="Admin.Buyers.Title" xml:space="preserve"><value>Buyers (Admin)</value></data>
+  <data name="Admin.Buyers.Deleted" xml:space="preserve"><value>Buyer deleted.</value></data>
+  <data name="Admin.Buyers.DeleteFailed" xml:space="preserve"><value>Cannot delete this buyer.</value></data>
+  <data name="Admin.Buyers.Reviewed" xml:space="preserve"><value>Review status updated.</value></data>
+  <data name="Admin.Buyers.ReviewFailed" xml:space="preserve"><value>Cannot review this buyer.</value></data>
+  <data name="Admin.Users.Title" xml:space="preserve"><value>Manage {0}</value></data>
+  <data name="Admin.Users.CreateHeading" xml:space="preserve"><value>Add {0}</value></data>
+  <data name="Admin.Users.Empty" xml:space="preserve"><value>No {0} yet.</value></data>
+  <data name="User.UserNameRequired" xml:space="preserve"><value>Username cannot be empty.</value></data>
+  <data name="User.PasswordTooShort" xml:space="preserve"><value>Password must be at least 6 characters.</value></data>
+  <data name="User.UserNameExists" xml:space="preserve"><value>Username already exists.</value></data>
+  <data name="User.Created" xml:space="preserve"><value>Account created.</value></data>
+  <data name="User.PasswordReset" xml:space="preserve"><value>Password reset.</value></data>
+  <data name="User.NotFound" xml:space="preserve"><value>Account not found.</value></data>
+  <data name="User.Enabled" xml:space="preserve"><value>Account enabled.</value></data>
+  <data name="User.Disabled" xml:space="preserve"><value>Account disabled.</value></data>
+  <data name="Sales.Buyers.Title" xml:space="preserve"><value>My buyers (Sales)</value></data>
+  <data name="Sales.Buyers.NotFound" xml:space="preserve"><value>Buyer not found.</value></data>
+  <data name="Sales.Buyers.Deleted" xml:space="preserve"><value>Buyer deleted.</value></data>
+  <data name="Sales.Buyers.DeleteFailed" xml:space="preserve"><value>Cannot delete this buyer.</value></data>
+  <data name="Supplier.Buyers.Title" xml:space="preserve"><value>Buyers (Supplier)</value></data>
+  <data name="Supplier.Tab.Unprocessed" xml:space="preserve"><value>Unprocessed</value></data>
+  <data name="Supplier.Tab.Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Supplier.Tab.Completed" xml:space="preserve"><value>Completed</value></data>
+  <data name="Supplier.Status.Unprocessed" xml:space="preserve"><value>Unprocessed</value></data>
+  <data name="Supplier.Status.Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Supplier.Status.Completed" xml:space="preserve"><value>Completed</value></data>
+  <data name="Supplier.InvalidStatus" xml:space="preserve"><value>Invalid status.</value></data>
+  <data name="Supplier.StatusUpdated" xml:space="preserve"><value>Processing status updated.</value></data>
+  <data name="Supplier.StatusUpdateFailed" xml:space="preserve"><value>Cannot update this buyer's processing status.</value></data>
+  <data name="Supplier.Mail.Title" xml:space="preserve"><value>Buyer mail</value></data>
+  <data name="Supplier.Mail.WindowExpires" xml:space="preserve"><value>Sync window expires at:</value></data>
+  <data name="Mail.Junk" xml:space="preserve"><value>Junk</value></data>
+  <data name="Buyer.Verify.Title" xml:space="preserve"><value>Verify card key</value></data>
+  <data name="Buyer.LinkInvalid" xml:space="preserve"><value>Invalid link</value></data>
+  <data name="Buyer.LinkInvalidOrExpired" xml:space="preserve"><value>Link is invalid or expired</value></data>
+  <data name="Buyer.UnlinkBlocked" xml:space="preserve"><value>Processing in progress; cannot remove</value></data>
+  <data name="Buyer.Email.Title" xml:space="preserve"><value>My mailbox</value></data>
+  <data name="Buyer.Email.CardStatus" xml:space="preserve"><value>Card status</value></data>
+  <data name="Buyer.Email.BoundEmail" xml:space="preserve"><value>Linked email:</value></data>
+  <data name="Buyer.Email.NoActions" xml:space="preserve"><value>No actions available for the current status.</value></data>
+  <data name="OAuth.Callback.Title" xml:space="preserve"><value>Email authorization</value></data>
+  <data name="OAuth.Success" xml:space="preserve"><value>Authorization succeeded; awaiting admin review.</value></data>
+  <data name="OAuth.BackToStatus" xml:space="preserve"><value>Back to mailbox status</value></data>
+  <data name="OAuth.AuthorizationFailed" xml:space="preserve"><value>Authorization failed: {0}</value></data>
+  <data name="OAuth.CallbackInvalid" xml:space="preserve"><value>Invalid authorization callback parameters</value></data>
 </root>
