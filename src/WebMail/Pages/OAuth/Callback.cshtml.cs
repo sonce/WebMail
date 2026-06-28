@@ -77,6 +77,7 @@ public sealed class CallbackModel(
         }
 
         buyer.CardStatus = CardStatus.Authorized;
+        buyer.CardUsedAt ??= DateTimeOffset.UtcNow;
         if (isNewOrChangedAccount)
         {
             buyer.EmailStatus = EmailAuthorizationStatus.Authorized;
