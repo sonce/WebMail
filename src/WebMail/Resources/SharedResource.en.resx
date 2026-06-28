@@ -147,7 +147,7 @@
   <data name="CardKey.Copy" xml:space="preserve"><value>Copy</value></data>
   <data name="CardKey.Generated" xml:space="preserve"><value>Card keys generated.</value></data>
   <data name="CardKey.CountInvalid" xml:space="preserve"><value>Count must be between 1 and 100.</value></data>
-  <data name="CardKey.SaleInvalid" xml:space="preserve"><value>Selected sales is invalid.</value></data>
+  <data name="CardKey.SaleInvalid" xml:space="preserve"><value>Selected sale is invalid.</value></data>
   <data name="CardKey.Deleted" xml:space="preserve"><value>Card key deleted.</value></data>
   <data name="CardKey.DeleteFailed" xml:space="preserve"><value>Delete failed: card key not found.</value></data>
 </root>
