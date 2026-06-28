@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
+using WebMail;
 using WebMail.Data;
 using WebMail.Domain;
 using WebMail.Services;
@@ -11,7 +13,8 @@ namespace WebMail.Pages.OAuth;
 public sealed class CallbackModel(
     WebMailDbContext db,
     BuyerRuleService ruleService,
-    IEmailProviderResolver providers) : PageModel
+    IEmailProviderResolver providers,
+    IStringLocalizer<SharedResource> loc) : PageModel
 {
     public string? Card { get; private set; }
     public string? ErrorMessage { get; private set; }
@@ -22,20 +25,20 @@ public sealed class CallbackModel(
 
         if (!string.IsNullOrWhiteSpace(error))
         {
-            ErrorMessage = $"授权失败：{error}";
+            ErrorMessage = loc["OAuth.AuthorizationFailed", error];
             return Page();
         }
 
         if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(state))
         {
-            ErrorMessage = "授权回调参数无效";
+            ErrorMessage = loc["OAuth.CallbackInvalid"];
             return Page();
         }
 
         var buyer = await db.Buyers.FirstOrDefaultAsync(x => x.CardNo == state && !x.IsDeleted, cancellationToken);
         if (buyer is null || buyer.CardStatus == CardStatus.DeletedOrDisabled)
         {
-            ErrorMessage = "链接无效或已失效";
+            ErrorMessage = loc["Buyer.LinkInvalidOrExpired"];
             return Page();
         }
 
@@ -50,7 +53,7 @@ public sealed class CallbackModel(
         if (existing is not null && isNewOrChangedAccount
             && !ruleService.ResolveBuyerMailAction(buyer).HasFlag(BuyerMailAction.ChangeEmail))
         {
-            ErrorMessage = ruleService.BuyerUnlinkBlockedMessage;
+            ErrorMessage = loc[ruleService.BuyerUnlinkBlockedMessageKey];
             return Page();
         }
 

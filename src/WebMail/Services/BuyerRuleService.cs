@@ -14,7 +14,7 @@ public enum BuyerMailAction
 
 public sealed class BuyerRuleService
 {
-    public string BuyerUnlinkBlockedMessage => "正在处理中，无法删除";
+    public string BuyerUnlinkBlockedMessageKey => "Buyer.UnlinkBlocked";
 
     public bool CanSalesDeleteBuyer(Buyer buyer, long salesUserId) =>
         !buyer.IsDeleted

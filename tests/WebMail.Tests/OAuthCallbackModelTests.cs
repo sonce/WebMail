@@ -68,7 +68,7 @@ public sealed class OAuthCallbackModelTests
     }
 
     private static CallbackModel CreateModel(WebMailDbContext db, IEmailProvider provider) =>
-        new(db, new BuyerRuleService(), new EmailProviderResolver([provider]));
+        new(db, new BuyerRuleService(), new EmailProviderResolver([provider]), TestLocalizer.Shared);
 
     private static WebMailDbContext CreateDb() =>
         new(new DbContextOptionsBuilder<WebMailDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString("N")).Options);

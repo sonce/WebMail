@@ -15,7 +15,7 @@ public sealed class BuyerPageModelTests
         db.Buyers.Add(new Buyer { CardNo = "card-1" });
         await db.SaveChangesAsync();
 
-        var page = new VerifyModel(db);
+        var page = new VerifyModel(db, TestLocalizer.Shared);
 
         await page.OnGetAsync("card-1", 99);
 
@@ -36,7 +36,7 @@ public sealed class BuyerPageModelTests
         db.EmailMessages.Add(new EmailMessage { BuyerId = buyer.Id, EmailAccountId = account.Id, ProviderMessageId = "m-1", Sender = "sender@example.com", Subject = "private", SentAt = DateTimeOffset.UtcNow });
         await db.SaveChangesAsync();
 
-        var page = new EmailModel(db, new BuyerRuleService());
+        var page = new EmailModel(db, new BuyerRuleService(), TestLocalizer.Shared);
 
         await page.OnGetAsync("card-2");
 
@@ -56,7 +56,7 @@ public sealed class BuyerPageModelTests
         db.EmailMessages.Add(new EmailMessage { BuyerId = buyer.Id, EmailAccountId = account.Id, ProviderMessageId = "m-1", Sender = "s@example.com", Subject = "audit", SentAt = DateTimeOffset.UtcNow });
         await db.SaveChangesAsync();
 
-        var page = new EmailModel(db, new BuyerRuleService());
+        var page = new EmailModel(db, new BuyerRuleService(), TestLocalizer.Shared);
         await page.OnPostChangeEmailAsync("card-3");
 
         var reloaded = await db.Buyers.SingleAsync(x => x.Id == buyer.Id);
@@ -77,7 +77,7 @@ public sealed class BuyerPageModelTests
         db.EmailAccounts.Add(new EmailAccount { BuyerId = buyer.Id, Email = "buyer@example.com", Provider = "Gmail", ProviderUserId = "u", EncryptedRefreshToken = "token" });
         await db.SaveChangesAsync();
 
-        var page = new EmailModel(db, new BuyerRuleService());
+        var page = new EmailModel(db, new BuyerRuleService(), TestLocalizer.Shared);
         await page.OnPostClearAuthAsync("card-4");
 
         var reloaded = await db.Buyers.SingleAsync(x => x.Id == buyer.Id);
@@ -97,7 +97,7 @@ public sealed class BuyerPageModelTests
         db.EmailAccounts.Add(new EmailAccount { BuyerId = buyer.Id, Email = "buyer@example.com", Provider = "Gmail", ProviderUserId = "u", EncryptedRefreshToken = "token" });
         await db.SaveChangesAsync();
 
-        var page = new EmailModel(db, new BuyerRuleService());
+        var page = new EmailModel(db, new BuyerRuleService(), TestLocalizer.Shared);
         await page.OnPostClearAuthAsync("card-5");
 
         Assert.Single(await db.EmailAccounts.Where(x => x.BuyerId == buyer.Id).ToListAsync());

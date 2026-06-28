@@ -3,10 +3,10 @@
 @using WebMail.Services
 @model WebMail.Pages.Buyer.EmailModel
 @{
-    ViewData["Title"] = "我的邮箱";
+    ViewData["Title"] = L["Buyer.Email.Title"].Value;
 }
 
-<h1 class="display-6">我的邮箱</h1>
+<h1 class="display-6">@L["Buyer.Email.Title"]</h1>
 
 @if (!string.IsNullOrEmpty(Model.ErrorMessage))
 {
@@ -16,49 +16,49 @@
 @if (!string.IsNullOrEmpty(Model.Card))
 {
     <dl class="row">
-        <dt class="col-sm-3">卡密状态</dt>
+        <dt class="col-sm-3">@L["Buyer.Email.CardStatus"]</dt>
         <dd class="col-sm-9">@Model.CardStatus</dd>
-        <dt class="col-sm-3">邮箱状态</dt>
+        <dt class="col-sm-3">@L["Table.EmailStatus"]</dt>
         <dd class="col-sm-9">@Model.EmailStatus</dd>
-        <dt class="col-sm-3">买家状态</dt>
+        <dt class="col-sm-3">@L["Table.BuyerStatus"]</dt>
         <dd class="col-sm-9">@Model.BuyerStatus</dd>
-        <dt class="col-sm-3">供应商状态</dt>
+        <dt class="col-sm-3">@L["Table.SupplierStatus"]</dt>
         <dd class="col-sm-9">@Model.SupplierStatus</dd>
     </dl>
 
     @if (Model.EmailAccount is not null)
     {
-        <p><strong>已绑定邮箱：</strong>@Model.EmailAccount.Email</p>
+        <p><strong>@L["Buyer.Email.BoundEmail"]</strong>@Model.EmailAccount.Email</p>
     }
 
     <div class="d-flex gap-2">
         @if (Model.Actions.HasFlag(BuyerMailAction.Authorize))
         {
-            <a class="btn btn-primary" asp-page="/OAuth/Start" asp-route-provider="Gmail" asp-route-card="@Model.Card">授权 Gmail</a>
-            <a class="btn btn-outline-primary" asp-page="/OAuth/Start" asp-route-provider="Outlook" asp-route-card="@Model.Card">授权 Outlook</a>
+            <a class="btn btn-primary" asp-page="/OAuth/Start" asp-route-provider="Gmail" asp-route-card="@Model.Card">@L["Action.AuthorizeGmail"]</a>
+            <a class="btn btn-outline-primary" asp-page="/OAuth/Start" asp-route-provider="Outlook" asp-route-card="@Model.Card">@L["Action.AuthorizeOutlook"]</a>
         }
         @if (Model.Actions.HasFlag(BuyerMailAction.ReAuthorize) && Model.EmailAccount is not null)
         {
-            <a class="btn btn-warning" asp-page="/OAuth/Start" asp-route-provider="@Model.EmailAccount.Provider" asp-route-card="@Model.Card">重新授权</a>
+            <a class="btn btn-warning" asp-page="/OAuth/Start" asp-route-provider="@Model.EmailAccount.Provider" asp-route-card="@Model.Card">@L["Action.ReAuthorize"]</a>
         }
         @if (Model.Actions.HasFlag(BuyerMailAction.ChangeEmail))
         {
             <form method="post" asp-page-handler="ChangeEmail">
                 <input type="hidden" name="card" value="@Model.Card" />
-                <button type="submit" class="btn btn-secondary">更改邮箱</button>
+                <button type="submit" class="btn btn-secondary">@L["Action.ChangeEmail"]</button>
             </form>
         }
         @if (Model.Actions.HasFlag(BuyerMailAction.ClearAuth))
         {
             <form method="post" asp-page-handler="ClearAuth">
                 <input type="hidden" name="card" value="@Model.Card" />
-                <button type="submit" class="btn btn-danger">清空授权</button>
+                <button type="submit" class="btn btn-danger">@L["Action.ClearAuth"]</button>
             </form>
         }
     </div>
 
     @if (Model.Actions == BuyerMailAction.None)
     {
-        <div class="alert alert-info mt-2" role="alert">当前状态暂无可执行的操作。</div>
+        <div class="alert alert-info mt-2" role="alert">@L["Buyer.Email.NoActions"]</div>
     }
 }

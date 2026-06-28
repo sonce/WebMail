@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
+using WebMail;
 using WebMail.Data;
 using WebMail.Domain;
 
@@ -9,10 +11,12 @@ namespace WebMail.Pages.Buyer;
 public class VerifyModel : PageModel
 {
     private readonly WebMailDbContext _db;
+    private readonly IStringLocalizer<SharedResource> _loc;
 
-    public VerifyModel(WebMailDbContext db)
+    public VerifyModel(WebMailDbContext db, IStringLocalizer<SharedResource> loc)
     {
         _db = db;
+        _loc = loc;
     }
 
     public string? ErrorMessage { get; private set; }
@@ -21,7 +25,7 @@ public class VerifyModel : PageModel
     {
         if (string.IsNullOrWhiteSpace(card))
         {
-            ErrorMessage = "链接无效";
+            ErrorMessage = _loc["Buyer.LinkInvalid"];
             return Page();
         }
 
@@ -29,7 +33,7 @@ public class VerifyModel : PageModel
 
         if (buyer is null || buyer.CardStatus == CardStatus.DeletedOrDisabled)
         {
-            ErrorMessage = "链接无效或已失效";
+            ErrorMessage = _loc["Buyer.LinkInvalidOrExpired"];
             return Page();
         }
 

@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
+using WebMail;
 using WebMail.Data;
 using WebMail.Domain;
 using WebMail.Services;
@@ -11,11 +13,13 @@ public class EmailModel : PageModel
 {
     private readonly WebMailDbContext _db;
     private readonly BuyerRuleService _ruleService;
+    private readonly IStringLocalizer<SharedResource> _loc;
 
-    public EmailModel(WebMailDbContext db, BuyerRuleService ruleService)
+    public EmailModel(WebMailDbContext db, BuyerRuleService ruleService, IStringLocalizer<SharedResource> loc)
     {
         _db = db;
         _ruleService = ruleService;
+        _loc = loc;
     }
 
     public string? Card { get; private set; }
@@ -33,7 +37,7 @@ public class EmailModel : PageModel
         var buyer = await LoadBuyerAsync(card);
         if (buyer is null)
         {
-            ErrorMessage = "链接无效或已失效";
+            ErrorMessage = _loc["Buyer.LinkInvalidOrExpired"];
             return Page();
         }
 
@@ -47,7 +51,7 @@ public class EmailModel : PageModel
         var buyer = await LoadBuyerAsync(card);
         if (buyer is null)
         {
-            ErrorMessage = "链接无效或已失效";
+            ErrorMessage = _loc["Buyer.LinkInvalidOrExpired"];
             return Page();
         }
 
@@ -56,7 +60,7 @@ public class EmailModel : PageModel
 
         if (!_ruleService.ResolveBuyerMailAction(buyer).HasFlag(BuyerMailAction.ChangeEmail))
         {
-            ErrorMessage = _ruleService.BuyerUnlinkBlockedMessage;
+            ErrorMessage = _loc[_ruleService.BuyerUnlinkBlockedMessageKey];
             return Render(buyer, account);
         }
 
@@ -77,7 +81,7 @@ public class EmailModel : PageModel
         var buyer = await LoadBuyerAsync(card);
         if (buyer is null)
         {
-            ErrorMessage = "链接无效或已失效";
+            ErrorMessage = _loc["Buyer.LinkInvalidOrExpired"];
             return Page();
         }
 
@@ -86,7 +90,7 @@ public class EmailModel : PageModel
 
         if (!_ruleService.ResolveBuyerMailAction(buyer).HasFlag(BuyerMailAction.ClearAuth))
         {
-            ErrorMessage = _ruleService.BuyerUnlinkBlockedMessage;
+            ErrorMessage = _loc[_ruleService.BuyerUnlinkBlockedMessageKey];
             return Render(buyer, account);
         }
 
