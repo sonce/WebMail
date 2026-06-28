@@ -1,0 +1,59 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
+using WebMail;
+using WebMail.Domain;
+using WebMail.Services;
+
+namespace WebMail.Pages.Admin;
+
+[Authorize(Policy = "AdminOnly")]
+public class CardKeysModel : PageModel
+{
+    private readonly CardKeyService _cardKeys;
+    private readonly IStringLocalizer<SharedResource> _loc;
+
+    public CardKeysModel(CardKeyService cardKeys, IStringLocalizer<SharedResource> loc)
+    {
+        _cardKeys = cardKeys;
+        _loc = loc;
+    }
+
+    public IReadOnlyList<CardKeyListItem> Cards { get; private set; } = Array.Empty<CardKeyListItem>();
+    public IReadOnlyList<SaleOption> Sales { get; private set; } = Array.Empty<SaleOption>();
+    public string? Message { get; private set; }
+
+    [BindProperty(SupportsGet = true)] public CardStatus? StatusFilter { get; set; }
+    [BindProperty(SupportsGet = true)] public long? SaleFilter { get; set; }
+    [BindProperty(SupportsGet = true)] public string? CardNo { get; set; }
+
+    [BindProperty] public int GenerateCount { get; set; } = 1;
+    [BindProperty] public long? GenerateSaleId { get; set; }
+
+    public async Task OnGetAsync() => await LoadAsync();
+
+    public async Task<IActionResult> OnPostGenerateAsync()
+    {
+        Message = _loc[(await _cardKeys.GenerateAsync(GenerateCount, GenerateSaleId, AdminId())).Message];
+        await LoadAsync();
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostDeleteAsync(long id)
+    {
+        Message = _loc[(await _cardKeys.DeleteAsync(id, AdminId())).Message];
+        await LoadAsync();
+        return Page();
+    }
+
+    private async Task LoadAsync()
+    {
+        Cards = await _cardKeys.ListAsync(StatusFilter, SaleFilter, CardNo);
+        Sales = await _cardKeys.ListSalesAsync();
+    }
+
+    private long? AdminId() =>
+        long.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
+}

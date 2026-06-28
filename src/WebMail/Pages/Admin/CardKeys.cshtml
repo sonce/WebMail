@@ -1,0 +1,123 @@
+@page
+@using WebMail.Domain
+@model WebMail.Pages.Admin.CardKeysModel
+@{
+    ViewData["Title"] = L["Admin.CardKeys.Title"].Value;
+}
+
+<h1 class="display-6">@L["Admin.CardKeys.Title"]</h1>
+
+@if (!string.IsNullOrEmpty(Model.Message))
+{
+    <div class="alert alert-info" role="alert">@Model.Message</div>
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h5">@L["Admin.CardKeys.GenerateHeading"]</h2>
+        <form method="post" asp-page-handler="Generate" class="row g-2">
+            <div class="col-auto">
+                <input class="form-control" type="number" min="1" max="100" asp-for="GenerateCount" placeholder="@L["CardKey.Count"]" />
+            </div>
+            <div class="col-auto">
+                <select class="form-select" asp-for="GenerateSaleId">
+                    <option value="">@L["CardKey.SaleUnassigned"]</option>
+                    @foreach (var sale in Model.Sales)
+                    {
+                        <option value="@sale.Id">@sale.DisplayName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">@L["CardKey.Generate"]</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto">
+        <select class="form-select" asp-for="StatusFilter"
+                asp-items="Html.GetEnumSelectList<WebMail.Domain.CardStatus>()">
+            <option value="">@L["CardKey.AllStatus"]</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <select class="form-select" asp-for="SaleFilter">
+            <option value="">@L["CardKey.AllSales"]</option>
+            @foreach (var sale in Model.Sales)
+            {
+                <option value="@sale.Id">@sale.DisplayName</option>
+            }
+        </select>
+    </div>
+    <div class="col-auto">
+        <input class="form-control" asp-for="CardNo" placeholder="@L["Filter.CardKeyword"]" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-primary">@L["Common.Filter"]</button>
+        <a class="btn btn-outline-secondary" asp-page="/Admin/CardKeys">@L["Common.Reset"]</a>
+    </div>
+</form>
+
+@if (Model.Cards.Count == 0)
+{
+    <p>@L["Admin.CardKeys.Empty"]</p>
+}
+else
+{
+    <div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>@L["Table.CardNo"]</th>
+                <th>@L["Table.Status"]</th>
+                <th>@L["CardKey.Sale"]</th>
+                <th>@L["Table.CreatedAt"]</th>
+                <th>@L["CardKey.UsedAt"]</th>
+                <th>@L["CardKey.Link"]</th>
+                <th>@L["Table.Operations"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var card in Model.Cards)
+            {
+                var link = $"{Request.Scheme}://{Request.Host}/?card={card.CardNo}";
+                if (card.SaleId is not null)
+                {
+                    link += $"&saleid={card.SaleId}";
+                }
+                <tr>
+                    <td>@card.CardNo</td>
+                    <td>@card.Status</td>
+                    <td>@(card.SaleDisplayName ?? "-")</td>
+                    <td>@card.CreatedAt</td>
+                    <td>@(card.UsedAt is null ? L["CardKey.NotUsed"].Value : card.UsedAt.ToString())</td>
+                    <td>
+                        <div class="input-group input-group-sm">
+                            <input class="form-control" type="text" value="@link" readonly />
+                            <button type="button" class="btn btn-outline-secondary copy-link" data-link="@link">@L["CardKey.Copy"]</button>
+                        </div>
+                    </td>
+                    <td>
+                        <form method="post" asp-page-handler="Delete">
+                            <input type="hidden" name="id" value="@card.Id" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger">@L["Common.Delete"]</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.copy-link').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                navigator.clipboard.writeText(btn.getAttribute('data-link'));
+            });
+        });
+    </script>
+}
