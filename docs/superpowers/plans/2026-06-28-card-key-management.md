@@ -388,7 +388,14 @@ git commit -m "feat(cardkey): add CardKeyService with generate/delete/list and C
 
 ---
 
-### Task 2: `Verify` 回写 `SaleId`
+### Task 2: `Verify` 回写 `SaleId` — 已取消（DROPPED）
+
+> **执行期决定（2026-06-28）：** 取消本任务。代码库存在刻意的安全测试
+> `BuyerPageModelTests.VerifyDoesNotTrustSaleIdFromPublicRequest`（提交 88b2fdd），
+> 要求"不信任公开链接里的 saleid"。从公开链接回写 `SaleId` 会让任意人把卡密挂到
+> 任意销售名下，破坏归属可信度。经用户裁定"听从安全"，`SaleId` **只**由管理员在
+> 生成时指定（Task 4 生成表单的可选销售下拉）。`Verify.cshtml.cs` 不改动，
+> 不新增 `VerifyModelTests.cs`。下方原始步骤保留作记录，不执行。
 
 **Files:**
 - Modify: `src/WebMail/Pages/Buyer/Verify.cshtml.cs:40-45`
@@ -978,7 +985,7 @@ git commit -m "feat(cardkey): localize card-key page and add admin nav entry"
 - 生成卡密（批量、上限 100）→ Task 1 `GenerateAsync` + Task 4 页面。✅
 - 删除卡密（软删除）→ Task 1 `DeleteAsync` + Task 4 页面。✅
 - 是否使用 / 使用时间 → Task 1 `CardUsedAt` 字段 + Task 3 回调记录 + Task 4 列表展示。✅
-- 所属销售（生成时指定 + 使用时回写）→ Task 1 生成绑定 + Task 2 `Verify` 回写。✅
+- 所属销售（生成时指定）→ Task 1 生成绑定。✅（链接回写/Task 2 已取消：与既有安全测试 `VerifyDoesNotTrustSaleIdFromPublicRequest` 冲突，经用户裁定听从安全。）
 - URL 格式 `?card=..&saleid=..` → Task 4 视图链接构造（用 `saleid`）。✅
 - 筛选（状态/销售/卡号）→ Task 1 `ListAsync` + Task 4 视图。✅
 - 本地化 + 导航 → Task 5。✅
