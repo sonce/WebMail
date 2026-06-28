@@ -35,6 +35,7 @@
   <data name="Common.Delete" xml:space="preserve"><value>Delete</value></data>
   <data name="Common.Reset" xml:space="preserve"><value>Reset</value></data>
   <data name="Common.Filter" xml:space="preserve"><value>Filter</value></data>
+  <data name="Common.Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Common.Create" xml:space="preserve"><value>Create</value></data>
   <data name="Common.NoBuyers" xml:space="preserve"><value>No buyers yet.</value></data>
   <data name="Common.BackToList" xml:space="preserve"><value>Back to list</value></data>
@@ -150,4 +151,15 @@
   <data name="CardKey.SaleInvalid" xml:space="preserve"><value>Selected sale is invalid.</value></data>
   <data name="CardKey.Deleted" xml:space="preserve"><value>Card key deleted.</value></data>
   <data name="CardKey.DeleteFailed" xml:space="preserve"><value>Delete failed: card key not found.</value></data>
+  <data name="CardKey.Tab.NotSent" xml:space="preserve"><value>Not sent</value></data>
+  <data name="CardKey.Tab.Sent" xml:space="preserve"><value>Sent</value></data>
+  <data name="CardKey.Send" xml:space="preserve"><value>Send</value></data>
+  <data name="CardKey.SendBatch" xml:space="preserve"><value>Send selected</value></data>
+  <data name="CardKey.SendModalTitle" xml:space="preserve"><value>Send to sales</value></data>
+  <data name="CardKey.ConfirmSend" xml:space="preserve"><value>Confirm</value></data>
+  <data name="CardKey.CopyLink" xml:space="preserve"><value>Copy link</value></data>
+  <data name="CardKey.SentAt" xml:space="preserve"><value>Sent at</value></data>
+  <data name="CardKey.Sent" xml:space="preserve"><value>Sent {0} card(s).</value></data>
+  <data name="CardKey.SendNoneSelected" xml:space="preserve"><value>Select at least one unsent card.</value></data>
+  <data name="CardKey.SendNoSale" xml:space="preserve"><value>Select a sales person.</value></data>
 </root>

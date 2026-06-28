@@ -3,6 +3,7 @@
 @model WebMail.Pages.Admin.CardKeysModel
 @{
     ViewData["Title"] = L["Admin.CardKeys.Title"].Value;
+    var notSent = Model.Tab == CardSendStatus.NotSent;
 }
 
 <h1 class="display-6">@L["Admin.CardKeys.Title"]</h1>
@@ -35,7 +36,25 @@
     </div>
 </div>
 
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link @(notSent ? "active" : "")"
+           asp-page="/Admin/CardKeys" asp-route-Tab="@CardSendStatus.NotSent"
+           asp-route-StatusFilter="@Model.StatusFilter" asp-route-SaleFilter="@Model.SaleFilter" asp-route-CardNo="@Model.CardNo">
+            @L["CardKey.Tab.NotSent"]
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(notSent ? "" : "active")"
+           asp-page="/Admin/CardKeys" asp-route-Tab="@CardSendStatus.Sent"
+           asp-route-StatusFilter="@Model.StatusFilter" asp-route-SaleFilter="@Model.SaleFilter" asp-route-CardNo="@Model.CardNo">
+            @L["CardKey.Tab.Sent"]
+        </a>
+    </li>
+</ul>
+
 <form method="get" class="row g-2 mb-3">
+    <input type="hidden" asp-for="Tab" />
     <div class="col-auto">
         <select class="form-select" asp-for="StatusFilter"
                 asp-items="Html.GetEnumSelectList<WebMail.Domain.CardStatus>()">
@@ -56,9 +75,16 @@
     </div>
     <div class="col-auto">
         <button type="submit" class="btn btn-outline-primary">@L["Common.Filter"]</button>
-        <a class="btn btn-outline-secondary" asp-page="/Admin/CardKeys">@L["Common.Reset"]</a>
+        <a class="btn btn-outline-secondary" asp-page="/Admin/CardKeys" asp-route-Tab="@Model.Tab">@L["Common.Reset"]</a>
     </div>
 </form>
+
+@if (notSent)
+{
+    <div class="mb-3">
+        <button type="button" class="btn btn-primary" id="btn-batch-send">@L["CardKey.SendBatch"]</button>
+    </div>
+}
 
 @if (Model.Cards.Count == 0)
 {
@@ -70,11 +96,22 @@ else
     <table class="table table-striped">
         <thead>
             <tr>
+                @if (notSent)
+                {
+                    <th><input type="checkbox" id="check-all" /></th>
+                }
                 <th>@L["Table.CardNo"]</th>
                 <th>@L["Table.Status"]</th>
                 <th>@L["CardKey.Sale"]</th>
                 <th>@L["Table.CreatedAt"]</th>
-                <th>@L["CardKey.UsedAt"]</th>
+                @if (notSent)
+                {
+                    <th>@L["CardKey.UsedAt"]</th>
+                }
+                else
+                {
+                    <th>@L["CardKey.SentAt"]</th>
+                }
                 <th>@L["CardKey.Link"]</th>
                 <th>@L["Table.Operations"]</th>
             </tr>
@@ -88,11 +125,22 @@ else
                     link += $"&saleid={card.SaleId}";
                 }
                 <tr>
+                    @if (notSent)
+                    {
+                        <td><input type="checkbox" class="row-check" data-id="@card.Id" data-cardno="@card.CardNo" /></td>
+                    }
                     <td>@card.CardNo</td>
                     <td>@card.Status</td>
                     <td>@(card.SaleDisplayName ?? "-")</td>
                     <td>@card.CreatedAt</td>
-                    <td>@(card.UsedAt is null ? L["CardKey.NotUsed"].Value : card.UsedAt.ToString())</td>
+                    @if (notSent)
+                    {
+                        <td>@(card.UsedAt is null ? L["CardKey.NotUsed"].Value : card.UsedAt.ToString())</td>
+                    }
+                    else
+                    {
+                        <td>@(card.SentAt is null ? "-" : card.SentAt.ToString())</td>
+                    }
                     <td>
                         <div class="input-group input-group-sm">
                             <input class="form-control" type="text" value="@link" readonly />
@@ -100,15 +148,57 @@ else
                         </div>
                     </td>
                     <td>
-                        <form method="post" asp-page-handler="Delete">
-                            <input type="hidden" name="id" value="@card.Id" />
-                            <button type="submit" class="btn btn-sm btn-outline-danger">@L["Common.Delete"]</button>
-                        </form>
+                        <div class="d-flex gap-1">
+                            @if (notSent)
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-row-send"
+                                        data-id="@card.Id" data-cardno="@card.CardNo">@L["CardKey.Send"]</button>
+                            }
+                            <form method="post" asp-page-handler="Delete">
+                                <input type="hidden" name="id" value="@card.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">@L["Common.Delete"]</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
             }
         </tbody>
     </table>
+    </div>
+}
+
+@if (notSent)
+{
+    <div class="modal fade" id="sendModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" asp-page-handler="Send">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@L["CardKey.SendModalTitle"]</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">@L["CardKey.Sale"]</label>
+                            <select class="form-select" id="SendSaleSelect" name="SendSaleId">
+                                <option value="">@L["CardKey.SaleUnassigned"]</option>
+                                @foreach (var sale in Model.Sales)
+                                {
+                                    <option value="@sale.Id">@sale.DisplayName</option>
+                                }
+                            </select>
+                        </div>
+                        <div id="send-card-list" class="small text-muted mb-2"></div>
+                        <div id="send-ids"></div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-copy-links">@L["CardKey.CopyLink"]</button>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">@L["Common.Cancel"]</button>
+                        <button type="submit" class="btn btn-primary">@L["CardKey.ConfirmSend"]</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 }
 
@@ -119,5 +209,60 @@ else
                 navigator.clipboard.writeText(btn.getAttribute('data-link'));
             });
         });
+
+        (function () {
+            var modalEl = document.getElementById('sendModal');
+            if (!modalEl) { return; }
+            var bsModal = new bootstrap.Modal(modalEl);
+            var modalCards = [];
+            var noneSelectedMsg = '@L["CardKey.SendNoneSelected"].Value';
+
+            function openSendModal(cards) {
+                modalCards = cards;
+                document.getElementById('send-card-list').innerHTML =
+                    cards.map(function (c) { return '<div>' + c.cardNo + '</div>'; }).join('');
+                document.getElementById('send-ids').innerHTML =
+                    cards.map(function (c) { return '<input type="hidden" name="SelectedIds" value="' + c.id + '" />'; }).join('');
+                bsModal.show();
+            }
+
+            var batchBtn = document.getElementById('btn-batch-send');
+            if (batchBtn) {
+                batchBtn.addEventListener('click', function () {
+                    var checked = Array.prototype.slice.call(document.querySelectorAll('.row-check:checked'));
+                    if (checked.length === 0) { alert(noneSelectedMsg); return; }
+                    openSendModal(checked.map(function (cb) {
+                        return { id: cb.getAttribute('data-id'), cardNo: cb.getAttribute('data-cardno') };
+                    }));
+                });
+            }
+
+            document.querySelectorAll('.btn-row-send').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    openSendModal([{ id: btn.getAttribute('data-id'), cardNo: btn.getAttribute('data-cardno') }]);
+                });
+            });
+
+            var checkAll = document.getElementById('check-all');
+            if (checkAll) {
+                checkAll.addEventListener('change', function () {
+                    document.querySelectorAll('.row-check').forEach(function (cb) { cb.checked = checkAll.checked; });
+                });
+            }
+
+            var copyBtn = document.getElementById('btn-copy-links');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', function () {
+                    var saleId = document.getElementById('SendSaleSelect').value;
+                    var origin = window.location.origin;
+                    var text = modalCards.map(function (c) {
+                        var link = origin + '/?card=' + encodeURIComponent(c.cardNo);
+                        if (saleId) { link += '&saleid=' + saleId; }
+                        return link;
+                    }).join('\n');
+                    navigator.clipboard.writeText(text);
+                });
+            }
+        })();
     </script>
 }

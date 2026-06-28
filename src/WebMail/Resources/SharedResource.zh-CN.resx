@@ -35,6 +35,7 @@
   <data name="Common.Delete" xml:space="preserve"><value>删除</value></data>
   <data name="Common.Reset" xml:space="preserve"><value>重置</value></data>
   <data name="Common.Filter" xml:space="preserve"><value>筛选</value></data>
+  <data name="Common.Cancel" xml:space="preserve"><value>取消</value></data>
   <data name="Common.Create" xml:space="preserve"><value>创建</value></data>
   <data name="Common.NoBuyers" xml:space="preserve"><value>暂无买家。</value></data>
   <data name="Common.BackToList" xml:space="preserve"><value>返回列表</value></data>
@@ -150,4 +151,15 @@
   <data name="CardKey.SaleInvalid" xml:space="preserve"><value>所选销售无效。</value></data>
   <data name="CardKey.Deleted" xml:space="preserve"><value>卡密已删除。</value></data>
   <data name="CardKey.DeleteFailed" xml:space="preserve"><value>删除失败：卡密不存在。</value></data>
+  <data name="CardKey.Tab.NotSent" xml:space="preserve"><value>未发送</value></data>
+  <data name="CardKey.Tab.Sent" xml:space="preserve"><value>已发送</value></data>
+  <data name="CardKey.Send" xml:space="preserve"><value>发送</value></data>
+  <data name="CardKey.SendBatch" xml:space="preserve"><value>批量发送</value></data>
+  <data name="CardKey.SendModalTitle" xml:space="preserve"><value>发送给销售</value></data>
+  <data name="CardKey.ConfirmSend" xml:space="preserve"><value>确认发送</value></data>
+  <data name="CardKey.CopyLink" xml:space="preserve"><value>复制链接</value></data>
+  <data name="CardKey.SentAt" xml:space="preserve"><value>发送时间</value></data>
+  <data name="CardKey.Sent" xml:space="preserve"><value>已发送 {0} 张。</value></data>
+  <data name="CardKey.SendNoneSelected" xml:space="preserve"><value>请先勾选要发送的卡密。</value></data>
+  <data name="CardKey.SendNoSale" xml:space="preserve"><value>请选择销售。</value></data>
 </root>
