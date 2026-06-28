@@ -57,13 +57,17 @@ public sealed class CardKeyService
             }
         }
 
+        var now = DateTimeOffset.UtcNow;
+        var sent = saleId is not null;
         foreach (var cardNo in generated)
         {
             _db.Buyers.Add(new Buyer
             {
                 CardNo = cardNo,
                 CardStatus = CardStatus.Unused,
-                SaleId = saleId
+                SaleId = saleId,
+                CardSendStatus = sent ? CardSendStatus.Sent : CardSendStatus.NotSent,
+                CardSentAt = sent ? now : null
             });
         }
 

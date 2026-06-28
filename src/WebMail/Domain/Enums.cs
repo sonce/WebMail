@@ -7,3 +7,4 @@ public enum BuyerStatus { NotSubmitted = 1, PendingReview = 2, Approved = 3, Rej
 public enum SupplierProcessingStatus { Unprocessed = 1, Failed = 2, Completed = 3 }
 public enum SyncJobStatus { Pending = 1, Running = 2, Succeeded = 3, Failed = 4 }
 public enum MailFolder { Inbox = 1, Junk = 2 }
+public enum CardSendStatus { NotSent = 1, Sent = 2 }

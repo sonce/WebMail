@@ -25,6 +25,8 @@ public sealed class CardKeyServiceTests
         Assert.Equal(3, cards.Count);
         Assert.All(cards, c => Assert.Equal(CardStatus.Unused, c.CardStatus));
         Assert.All(cards, c => Assert.Equal(sale.Id, c.SaleId));
+        Assert.All(cards, c => Assert.Equal(CardSendStatus.Sent, c.CardSendStatus));
+        Assert.All(cards, c => Assert.NotNull(c.CardSentAt));
         Assert.Equal(3, cards.Select(c => c.CardNo).Distinct().Count());
     }
 
@@ -37,7 +39,10 @@ public sealed class CardKeyServiceTests
         var result = await service.GenerateAsync(1, saleId: null, actingAdminId: 1);
 
         Assert.True(result.Success);
-        Assert.Null((await db.Buyers.SingleAsync()).SaleId);
+        var card = await db.Buyers.SingleAsync();
+        Assert.Null(card.SaleId);
+        Assert.Equal(CardSendStatus.NotSent, card.CardSendStatus);
+        Assert.Null(card.CardSentAt);
     }
 
     [Theory]
