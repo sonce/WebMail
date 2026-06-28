@@ -122,4 +122,13 @@
   <data name="OAuth.BackToStatus" xml:space="preserve"><value>返回邮箱状态</value></data>
   <data name="OAuth.AuthorizationFailed" xml:space="preserve"><value>授权失败：{0}</value></data>
   <data name="OAuth.CallbackInvalid" xml:space="preserve"><value>授权回调参数无效</value></data>
+  <data name="OAuth.Start.MissingCard" xml:space="preserve"><value>缺少卡密。</value></data>
+  <data name="OAuth.Start.InvalidCard" xml:space="preserve"><value>卡密无效。</value></data>
+  <data name="Error.Title" xml:space="preserve"><value>错误</value></data>
+  <data name="Error.Heading" xml:space="preserve"><value>出错了。</value></data>
+  <data name="Error.Subheading" xml:space="preserve"><value>处理您的请求时发生错误。</value></data>
+  <data name="Error.RequestIdLabel" xml:space="preserve"><value>请求 ID：</value></data>
+  <data name="Error.DevMode.Heading" xml:space="preserve"><value>开发模式</value></data>
+  <data name="Error.DevMode.Body1" xml:space="preserve"><value>切换到&lt;strong&gt;开发&lt;/strong&gt;环境会显示该错误的详细信息。</value></data>
+  <data name="Error.DevMode.Body2" xml:space="preserve"><value>&lt;strong&gt;已部署的应用不应启用开发环境。&lt;/strong&gt;它可能会向最终用户显示异常中的敏感信息。如需本地调试，请将 &lt;strong&gt;ASPNETCORE_ENVIRONMENT&lt;/strong&gt; 环境变量设为 &lt;strong&gt;Development&lt;/strong&gt; 并重启应用以启用&lt;strong&gt;开发&lt;/strong&gt;环境。</value></data>
 </root>

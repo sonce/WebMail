@@ -24,6 +24,8 @@ public sealed class SetModel : PageModel
                     Expires = DateTimeOffset.UtcNow.AddYears(1),
                     IsEssential = true,
                     Path = "/",
+                    SameSite = SameSiteMode.Lax,
+                    Secure = Request.IsHttps,
                 });
         }
 
