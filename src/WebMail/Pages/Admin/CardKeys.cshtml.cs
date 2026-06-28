@@ -29,6 +29,11 @@ public class CardKeysModel : PageModel
     [BindProperty(SupportsGet = true)] public long? SaleFilter { get; set; }
     [BindProperty(SupportsGet = true)] public string? CardNo { get; set; }
 
+    [BindProperty(SupportsGet = true)] public CardSendStatus Tab { get; set; } = CardSendStatus.NotSent;
+
+    [BindProperty] public long[] SelectedIds { get; set; } = Array.Empty<long>();
+    [BindProperty] public long SendSaleId { get; set; }
+
     [BindProperty] public int GenerateCount { get; set; } = 1;
     [BindProperty] public long? GenerateSaleId { get; set; }
 
@@ -48,9 +53,19 @@ public class CardKeysModel : PageModel
         return Page();
     }
 
+    public async Task<IActionResult> OnPostSendAsync()
+    {
+        var result = await _cardKeys.SendAsync(SelectedIds, SendSaleId, AdminId());
+        Message = result.Success
+            ? _loc["CardKey.Sent", result.GeneratedCount]
+            : _loc[result.Message];
+        await LoadAsync();
+        return Page();
+    }
+
     private async Task LoadAsync()
     {
-        Cards = await _cardKeys.ListAsync(StatusFilter, SaleFilter, CardNo);
+        Cards = await _cardKeys.ListAsync(StatusFilter, SaleFilter, CardNo, Tab);
         Sales = await _cardKeys.ListSalesAsync();
     }
 

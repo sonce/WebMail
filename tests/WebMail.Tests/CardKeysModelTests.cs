@@ -54,6 +54,36 @@ public sealed class CardKeysModelTests
         Assert.True((await db.Buyers.SingleAsync()).IsDeleted);
     }
 
+    [Fact]
+    public async Task SendHandlerMarksSelectedCardsSent()
+    {
+        await using var db = CreateDb();
+        db.Users.Add(new AppUser { Id = 5, UserName = "u5", DisplayName = "Alice", Role = UserRole.Sales });
+        db.Buyers.Add(new Buyer { Id = 1, CardNo = "c1", CardSendStatus = CardSendStatus.NotSent });
+        await db.SaveChangesAsync();
+        var model = CreateModel(db);
+        model.SelectedIds = new[] { 1L };
+        model.SendSaleId = 5;
+
+        await model.OnPostSendAsync();
+
+        Assert.StartsWith("CardKey.Sent", model.Message);
+        Assert.Equal(CardSendStatus.Sent, (await db.Buyers.SingleAsync()).CardSendStatus);
+    }
+
+    [Fact]
+    public async Task SendHandlerWithNoSelectionSurfacesMessage()
+    {
+        await using var db = CreateDb();
+        var model = CreateModel(db);
+        model.SelectedIds = Array.Empty<long>();
+        model.SendSaleId = 5;
+
+        await model.OnPostSendAsync();
+
+        Assert.Equal("CardKey.SendNoneSelected", model.Message);
+    }
+
     private static CardKeysModel CreateModel(WebMailDbContext db) =>
         new(new CardKeyService(db, new CardGenerationService()), TestLocalizer.Shared)
         {
