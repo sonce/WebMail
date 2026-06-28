@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
+using WebMail;
 using WebMail.Data;
 using WebMail.Domain;
 using WebMail.Services;
@@ -14,11 +16,13 @@ public class BuyersModel : PageModel
 {
     private readonly WebMailDbContext _db;
     private readonly BuyerRuleService _ruleService;
+    private readonly IStringLocalizer<SharedResource> _loc;
 
-    public BuyersModel(WebMailDbContext db, BuyerRuleService ruleService)
+    public BuyersModel(WebMailDbContext db, BuyerRuleService ruleService, IStringLocalizer<SharedResource> loc)
     {
         _db = db;
         _ruleService = ruleService;
+        _loc = loc;
     }
 
     public IReadOnlyList<Domain.Buyer> Buyers { get; private set; } = Array.Empty<Domain.Buyer>();
@@ -45,17 +49,17 @@ public class BuyersModel : PageModel
         var buyer = await _db.Buyers.FirstOrDefaultAsync(b => b.Id == id);
         if (buyer is null)
         {
-            Message = "买家不存在。";
+            Message = _loc["Sales.Buyers.NotFound"];
         }
         else if (_ruleService.CanSalesDeleteBuyer(buyer, currentUserId))
         {
             buyer.IsDeleted = true;
             await _db.SaveChangesAsync();
-            Message = "已删除买家。";
+            Message = _loc["Sales.Buyers.Deleted"];
         }
         else
         {
-            Message = "无法删除该买家。";
+            Message = _loc["Sales.Buyers.DeleteFailed"];
         }
 
         await LoadBuyersAsync(currentUserId);

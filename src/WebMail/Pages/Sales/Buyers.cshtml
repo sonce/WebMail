@@ -2,10 +2,10 @@
 @using WebMail.Domain
 @model WebMail.Pages.Sales.BuyersModel
 @{
-    ViewData["Title"] = "我的买家（销售）";
+    ViewData["Title"] = L["Sales.Buyers.Title"].Value;
 }
 
-<h1 class="display-6">我的买家（销售）</h1>
+<h1 class="display-6">@L["Sales.Buyers.Title"]</h1>
 
 @if (!string.IsNullOrEmpty(Model.Message))
 {
@@ -14,19 +14,19 @@
 
 @if (Model.Buyers.Count == 0)
 {
-    <p>暂无买家。</p>
+    <p>@L["Common.NoBuyers"]</p>
 }
 else
 {
     <table class="table table-striped">
         <thead>
             <tr>
-                <th>卡密</th>
-                <th>邮箱状态</th>
-                <th>买家状态</th>
-                <th>供应商处理状态</th>
-                <th>创建时间</th>
-                <th>操作</th>
+                <th>@L["Table.CardNo"]</th>
+                <th>@L["Table.EmailStatus"]</th>
+                <th>@L["Table.BuyerStatus"]</th>
+                <th>@L["Table.SupplierProcessingStatus"]</th>
+                <th>@L["Table.CreatedAt"]</th>
+                <th>@L["Table.Operations"]</th>
             </tr>
         </thead>
         <tbody>
@@ -41,7 +41,7 @@ else
                     <td>
                         <form method="post" asp-page-handler="Delete">
                             <input type="hidden" name="id" value="@buyer.Id" />
-                            <button type="submit" class="btn btn-sm btn-danger">删除</button>
+                            <button type="submit" class="btn btn-sm btn-danger">@L["Common.Delete"]</button>
                         </form>
                     </td>
                 </tr>
