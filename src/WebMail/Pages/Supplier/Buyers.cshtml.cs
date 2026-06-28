@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
+using WebMail;
 using WebMail.Data;
 using WebMail.Domain;
 using WebMail.Services;
@@ -14,11 +16,13 @@ public class BuyersModel : PageModel
 {
     private readonly WebMailDbContext _db;
     private readonly BuyerRuleService _ruleService;
+    private readonly IStringLocalizer<SharedResource> _loc;
 
-    public BuyersModel(WebMailDbContext db, BuyerRuleService ruleService)
+    public BuyersModel(WebMailDbContext db, BuyerRuleService ruleService, IStringLocalizer<SharedResource> loc)
     {
         _db = db;
         _ruleService = ruleService;
+        _loc = loc;
     }
 
     public IReadOnlyList<Domain.Buyer> Buyers { get; private set; } = Array.Empty<Domain.Buyer>();
@@ -44,7 +48,7 @@ public class BuyersModel : PageModel
 
         if (status is not (SupplierProcessingStatus.Failed or SupplierProcessingStatus.Completed))
         {
-            Message = "无效的状态。";
+            Message = _loc["Supplier.InvalidStatus"];
             await LoadBuyersAsync(supplierId);
             return Page();
         }
@@ -63,11 +67,11 @@ public class BuyersModel : PageModel
                 Details = $"buyer={buyerId};status={status}"
             });
             await _db.SaveChangesAsync();
-            Message = "已更新处理状态。";
+            Message = _loc["Supplier.StatusUpdated"];
         }
         else
         {
-            Message = "无法更新该买家的处理状态。";
+            Message = _loc["Supplier.StatusUpdateFailed"];
         }
 
         await LoadBuyersAsync(supplierId);

@@ -64,7 +64,7 @@ public sealed class SupplierBuyersModelTests
 
     private static SupplierBuyers CreateModel(WebMailDbContext db, long supplierId)
     {
-        var model = new SupplierBuyers(db, new BuyerRuleService());
+        var model = new SupplierBuyers(db, new BuyerRuleService(), TestLocalizer.Shared);
         var httpContext = new DefaultHttpContext
         {
             User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, supplierId.ToString())], "test"))

@@ -2,28 +2,28 @@
 @using WebMail.Domain
 @model WebMail.Pages.Supplier.MailModel
 @{
-    ViewData["Title"] = "买家邮件";
+    ViewData["Title"] = L["Supplier.Mail.Title"].Value;
 }
 
-<h1 class="display-6">买家邮件</h1>
+<h1 class="display-6">@L["Supplier.Mail.Title"]</h1>
 
-<p><strong>同步窗口到期时间：</strong>@Model.ActiveWindowExpiresAt</p>
+<p><strong>@L["Supplier.Mail.WindowExpires"]</strong>@Model.ActiveWindowExpiresAt</p>
 
-<p><a class="btn btn-secondary btn-sm" asp-page="Buyers">返回列表</a></p>
+<p><a class="btn btn-secondary btn-sm" asp-page="Buyers">@L["Common.BackToList"]</a></p>
 
 @if (Model.Messages.Count == 0)
 {
-    <p>暂无邮件。</p>
+    <p>@L["Common.NoMail"]</p>
 }
 else
 {
     <table class="table table-striped">
         <thead>
             <tr>
-                <th>来源</th>
-                <th>发件人</th>
-                <th>主题</th>
-                <th>发送时间</th>
+                <th>@L["Table.Source"]</th>
+                <th>@L["Table.Sender"]</th>
+                <th>@L["Table.Subject"]</th>
+                <th>@L["Table.SentAt"]</th>
             </tr>
         </thead>
         <tbody>
@@ -33,7 +33,7 @@ else
                     <td>
                         @if (message.Folder == MailFolder.Junk)
                         {
-                            <span class="badge bg-warning text-dark">垃圾邮件</span>
+                            <span class="badge bg-warning text-dark">@L["Mail.Junk"]</span>
                         }
                     </td>
                     <td>@message.Sender</td>

@@ -2,13 +2,13 @@
 @using WebMail.Domain
 @model WebMail.Pages.Supplier.BuyersModel
 @{
-    ViewData["Title"] = "买家列表（供应商）";
+    ViewData["Title"] = L["Supplier.Buyers.Title"].Value;
     var unprocessed = Model.Buyers.Where(b => b.SupplierStatus == SupplierProcessingStatus.Unprocessed).ToList();
     var failed = Model.Buyers.Where(b => b.SupplierStatus == SupplierProcessingStatus.Failed).ToList();
     var completed = Model.Buyers.Where(b => b.SupplierStatus == SupplierProcessingStatus.Completed).ToList();
 }
 
-<h1 class="display-6">买家列表（供应商）</h1>
+<h1 class="display-6">@L["Supplier.Buyers.Title"]</h1>
 
 @if (!string.IsNullOrEmpty(Model.Message))
 {
@@ -18,15 +18,15 @@
 <ul class="nav nav-tabs" id="supplierBuyerTabs" role="tablist">
     <li class="nav-item" role="presentation">
         <button class="nav-link active" id="unprocessed-tab" data-bs-toggle="tab"
-                data-bs-target="#unprocessed-pane" type="button" role="tab">未处理 (@unprocessed.Count)</button>
+                data-bs-target="#unprocessed-pane" type="button" role="tab">@L["Supplier.Tab.Unprocessed"] (@unprocessed.Count)</button>
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="failed-tab" data-bs-toggle="tab"
-                data-bs-target="#failed-pane" type="button" role="tab">失败 (@failed.Count)</button>
+                data-bs-target="#failed-pane" type="button" role="tab">@L["Supplier.Tab.Failed"] (@failed.Count)</button>
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="completed-tab" data-bs-toggle="tab"
-                data-bs-target="#completed-pane" type="button" role="tab">完成 (@completed.Count)</button>
+                data-bs-target="#completed-pane" type="button" role="tab">@L["Supplier.Tab.Completed"] (@completed.Count)</button>
     </li>
 </ul>
 <div class="tab-content pt-3">

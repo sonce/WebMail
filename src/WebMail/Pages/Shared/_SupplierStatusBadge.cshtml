@@ -4,12 +4,12 @@
 @switch (Model)
 {
     case SupplierProcessingStatus.Failed:
-        <span class="badge bg-danger">失败</span>
+        <span class="badge bg-danger">@L["Supplier.Status.Failed"]</span>
         break;
     case SupplierProcessingStatus.Completed:
-        <span class="badge bg-success">完成</span>
+        <span class="badge bg-success">@L["Supplier.Status.Completed"]</span>
         break;
     default:
-        <span>未处理</span>
+        <span>@L["Supplier.Status.Unprocessed"]</span>
         break;
 }
