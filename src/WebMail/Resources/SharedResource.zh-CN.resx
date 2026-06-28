@@ -131,4 +131,23 @@
   <data name="Error.DevMode.Heading" xml:space="preserve"><value>开发模式</value></data>
   <data name="Error.DevMode.Body1" xml:space="preserve"><value>切换到&lt;strong&gt;开发&lt;/strong&gt;环境会显示该错误的详细信息。</value></data>
   <data name="Error.DevMode.Body2" xml:space="preserve"><value>&lt;strong&gt;已部署的应用不应启用开发环境。&lt;/strong&gt;它可能会向最终用户显示异常中的敏感信息。如需本地调试，请将 &lt;strong&gt;ASPNETCORE_ENVIRONMENT&lt;/strong&gt; 环境变量设为 &lt;strong&gt;Development&lt;/strong&gt; 并重启应用以启用&lt;strong&gt;开发&lt;/strong&gt;环境。</value></data>
+  <data name="Nav.Admin.CardKeys" xml:space="preserve"><value>卡密管理</value></data>
+  <data name="Admin.CardKeys.Title" xml:space="preserve"><value>卡密管理</value></data>
+  <data name="Admin.CardKeys.GenerateHeading" xml:space="preserve"><value>生成卡密</value></data>
+  <data name="Admin.CardKeys.Empty" xml:space="preserve"><value>暂无卡密。</value></data>
+  <data name="CardKey.Generate" xml:space="preserve"><value>生成</value></data>
+  <data name="CardKey.Count" xml:space="preserve"><value>数量</value></data>
+  <data name="CardKey.Sale" xml:space="preserve"><value>所属销售</value></data>
+  <data name="CardKey.SaleUnassigned" xml:space="preserve"><value>不指定销售</value></data>
+  <data name="CardKey.AllStatus" xml:space="preserve"><value>全部状态</value></data>
+  <data name="CardKey.AllSales" xml:space="preserve"><value>全部销售</value></data>
+  <data name="CardKey.UsedAt" xml:space="preserve"><value>使用时间</value></data>
+  <data name="CardKey.NotUsed" xml:space="preserve"><value>未使用</value></data>
+  <data name="CardKey.Link" xml:space="preserve"><value>链接</value></data>
+  <data name="CardKey.Copy" xml:space="preserve"><value>复制</value></data>
+  <data name="CardKey.Generated" xml:space="preserve"><value>卡密已生成。</value></data>
+  <data name="CardKey.CountInvalid" xml:space="preserve"><value>生成数量需在 1 到 100 之间。</value></data>
+  <data name="CardKey.SaleInvalid" xml:space="preserve"><value>所选销售无效。</value></data>
+  <data name="CardKey.Deleted" xml:space="preserve"><value>卡密已删除。</value></data>
+  <data name="CardKey.DeleteFailed" xml:space="preserve"><value>删除失败：卡密不存在。</value></data>
 </root>

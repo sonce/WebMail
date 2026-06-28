@@ -131,4 +131,23 @@
   <data name="Error.DevMode.Heading" xml:space="preserve"><value>Development Mode</value></data>
   <data name="Error.DevMode.Body1" xml:space="preserve"><value>Swapping to the &lt;strong&gt;Development&lt;/strong&gt; environment displays detailed information about the error that occurred.</value></data>
   <data name="Error.DevMode.Body2" xml:space="preserve"><value>&lt;strong&gt;The Development environment shouldn't be enabled for deployed applications.&lt;/strong&gt; It can result in displaying sensitive information from exceptions to end users. For local debugging, enable the &lt;strong&gt;Development&lt;/strong&gt; environment by setting the &lt;strong&gt;ASPNETCORE_ENVIRONMENT&lt;/strong&gt; environment variable to &lt;strong&gt;Development&lt;/strong&gt; and restarting the app.</value></data>
+  <data name="Nav.Admin.CardKeys" xml:space="preserve"><value>Card Keys</value></data>
+  <data name="Admin.CardKeys.Title" xml:space="preserve"><value>Card Key Management</value></data>
+  <data name="Admin.CardKeys.GenerateHeading" xml:space="preserve"><value>Generate Card Keys</value></data>
+  <data name="Admin.CardKeys.Empty" xml:space="preserve"><value>No card keys yet.</value></data>
+  <data name="CardKey.Generate" xml:space="preserve"><value>Generate</value></data>
+  <data name="CardKey.Count" xml:space="preserve"><value>Count</value></data>
+  <data name="CardKey.Sale" xml:space="preserve"><value>Sales</value></data>
+  <data name="CardKey.SaleUnassigned" xml:space="preserve"><value>No sales assigned</value></data>
+  <data name="CardKey.AllStatus" xml:space="preserve"><value>All statuses</value></data>
+  <data name="CardKey.AllSales" xml:space="preserve"><value>All sales</value></data>
+  <data name="CardKey.UsedAt" xml:space="preserve"><value>Used at</value></data>
+  <data name="CardKey.NotUsed" xml:space="preserve"><value>Not used</value></data>
+  <data name="CardKey.Link" xml:space="preserve"><value>Link</value></data>
+  <data name="CardKey.Copy" xml:space="preserve"><value>Copy</value></data>
+  <data name="CardKey.Generated" xml:space="preserve"><value>Card keys generated.</value></data>
+  <data name="CardKey.CountInvalid" xml:space="preserve"><value>Count must be between 1 and 100.</value></data>
+  <data name="CardKey.SaleInvalid" xml:space="preserve"><value>Selected sales is invalid.</value></data>
+  <data name="CardKey.Deleted" xml:space="preserve"><value>Card key deleted.</value></data>
+  <data name="CardKey.DeleteFailed" xml:space="preserve"><value>Delete failed: card key not found.</value></data>
 </root>
