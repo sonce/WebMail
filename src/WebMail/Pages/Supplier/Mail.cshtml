@@ -83,7 +83,6 @@
         var timer = null;
 
         function render(data) {
-            var body = document.getElementById('mailBody');
             var content = document.getElementById('mailContent');
             var alert = document.getElementById('mailAlert');
             var msgs = data.messages || [];
@@ -122,7 +121,7 @@
         }
 
         function fetchMail(force) {
-            $.getJSON(pollUrl + (force ? '&force=1' : ''))
+            $.getJSON(pollUrl + (force ? '&force=true' : ''))
                 .done(render)
                 .fail(function () {
                     var alert = document.getElementById('mailAlert');
