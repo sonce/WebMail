@@ -22,12 +22,14 @@ public class MailModel : PageModel
 
     private readonly WebMailDbContext _db;
     private readonly ShipmentService _shipments;
+    private readonly IMailCacheService _cache;
     private readonly IStringLocalizer<SharedResource> _loc;
 
-    public MailModel(WebMailDbContext db, ShipmentService shipments, IStringLocalizer<SharedResource> loc)
+    public MailModel(WebMailDbContext db, ShipmentService shipments, IMailCacheService cache, IStringLocalizer<SharedResource> loc)
     {
         _db = db;
         _shipments = shipments;
+        _cache = cache;
         _loc = loc;
     }
 
@@ -56,7 +58,8 @@ public class MailModel : PageModel
 
         BuyerId = buyerId;
 
-        Messages = Array.Empty<Domain.MailMessageView>();
+        var cached = await _cache.GetOrFetchAsync(buyerId, force: false, CancellationToken.None);
+        Messages = cached.Messages;
 
         Shipments = await _shipments.GetForBuyerAsync(buyerId);
 
@@ -66,6 +69,21 @@ public class MailModel : PageModel
         }
 
         return Page();
+    }
+
+    public async Task<IActionResult> OnGetPoll(long buyerId, bool force = false)
+    {
+        if (!await ShipmentAccess.CanAccessBuyerAsync(_db, User, buyerId))
+        {
+            return Forbid();
+        }
+        if (!User.IsInRole("Administrator") && !await IsBuyerReadyAsync(buyerId))
+        {
+            return Forbid();
+        }
+
+        var cached = await _cache.GetOrFetchAsync(buyerId, force, CancellationToken.None);
+        return new JsonResult(new MailPollResponse(cached.Messages, cached.Stale, cached.Error));
     }
 
     public async Task<IActionResult> OnPostAddShipmentAsync(long buyerId, string? description, IFormFile? image)
@@ -112,3 +130,5 @@ public class MailModel : PageModel
         return RedirectToPage(new { buyerId });
     }
 }
+
+public sealed record MailPollResponse(IReadOnlyList<MailMessageView> Messages, bool Stale, string? Error);

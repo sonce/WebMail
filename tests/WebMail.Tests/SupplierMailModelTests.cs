@@ -11,6 +11,7 @@ using WebMail.Data;
 using WebMail.Domain;
 using WebMail.Services;
 using MailModel = WebMail.Pages.Supplier.MailModel;
+using MailPollResponse = WebMail.Pages.Supplier.MailPollResponse;
 using Xunit;
 
 namespace WebMail.Tests;
@@ -25,13 +26,22 @@ public sealed class SupplierMailModelTests : IDisposable
 
     private ShipmentService Svc(WebMailDbContext db) => new(db, new SnowflakeIdGenerator(), _root);
 
-    private MailModel CreateModel(WebMailDbContext db, long userId, string role)
+    private MailModel CreateModel(WebMailDbContext db, long userId, string role, IMailCacheService? cache = null)
     {
-        var model = new MailModel(db, Svc(db), TestLocalizer.Shared);
+        var model = new MailModel(db, Svc(db), cache ?? new StubCache(), TestLocalizer.Shared);
         var user = new ClaimsPrincipal(new ClaimsIdentity(
             new[] { new Claim(ClaimTypes.NameIdentifier, userId.ToString()), new Claim(ClaimTypes.Role, role) }, "test"));
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext { User = user } };
         return model;
+    }
+
+    private sealed class StubCache : IMailCacheService
+    {
+        private readonly MailCacheResult _result;
+        public StubCache() => _result = new MailCacheResult(Array.Empty<MailMessageView>(), Stale: false, Error: null);
+        public StubCache(IReadOnlyList<MailMessageView> messages) =>
+            _result = new MailCacheResult(messages, Stale: false, Error: null);
+        public Task<MailCacheResult> GetOrFetchAsync(long buyerId, bool force, CancellationToken ct) => Task.FromResult(_result);
     }
 
     private static IFormFile Png()
@@ -134,5 +144,39 @@ public sealed class SupplierMailModelTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_root)) Directory.Delete(_root, recursive: true);
+    }
+
+    [Fact]
+    public async Task OnGetPollReturnsJsonMessagesForAdmin()
+    {
+        await using var db = CreateDb();
+        db.Buyers.Add(SeedApprovedBuyer(db, 50));
+        await db.SaveChangesAsync();
+        var cache = new StubCache(new[]
+        {
+            new MailMessageView("m-1", "s@x.com", "Hello",
+                new DateTimeOffset(2026, 6, 30, 0, 0, 0, TimeSpan.Zero), MailFolder.Inbox)
+        });
+        var model = CreateModel(db, userId: 1, role: "Administrator", cache);
+
+        var result = await model.OnGetPoll(buyerId: 50, force: false);
+
+        var json = Assert.IsType<JsonResult>(result);
+        var payload = Assert.IsType<MailPollResponse>(json.Value);
+        Assert.Single(payload.Messages);
+        Assert.False(payload.Stale);
+    }
+
+    [Fact]
+    public async Task OnGetPollForbidsUnassignedSupplier()
+    {
+        await using var db = CreateDb();
+        db.Buyers.Add(SeedApprovedBuyer(db, 51));
+        await db.SaveChangesAsync();
+        var model = CreateModel(db, userId: 9, role: "Supplier"); // not assigned
+
+        var result = await model.OnGetPoll(buyerId: 51, force: false);
+
+        Assert.IsType<ForbidResult>(result);
     }
 }
