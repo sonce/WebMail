@@ -7,7 +7,7 @@ public sealed record ProviderMessage(string ProviderMessageId, string? ProviderT
 public interface IEmailProvider
 {
     string Name { get; }
-    OAuthStartResult BuildAuthorizationUrl(string cardNo);
-    Task<OAuthCallbackResult> CompleteAuthorizationAsync(string code, string state, CancellationToken cancellationToken);
+    OAuthStartResult BuildAuthorizationUrl(string state, string redirectUri);
+    Task<OAuthCallbackResult> CompleteAuthorizationAsync(string code, string state, string redirectUri, CancellationToken cancellationToken);
     Task<IReadOnlyList<ProviderMessage>> FetchMessagesAsync(string refreshToken, IReadOnlyCollection<string> allowedSenders, DateTimeOffset? since, CancellationToken cancellationToken);
 }

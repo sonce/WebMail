@@ -9,8 +9,8 @@ public sealed record CardKeyResult(bool Success, string Message, int GeneratedCo
 public sealed record CardKeyListItem(
     long Id,
     string CardNo,
-    CardStatus Status,
-    CardSendStatus SendStatus,
+    BuyerStage Stage,
+    bool AutoApprove,
     long? SaleId,
     string? SaleDisplayName,
     DateTimeOffset CreatedAt,
@@ -32,7 +32,7 @@ public sealed class CardKeyService
         _cardGen = cardGen;
     }
 
-    public async Task<CardKeyResult> GenerateAsync(int count, long? saleId, long? actingAdminId)
+    public async Task<CardKeyResult> GenerateAsync(int count, long? saleId, bool autoApprove, long? actingAdminId)
     {
         if (count < 1 || count > MaxGenerateCount)
         {
@@ -66,9 +66,9 @@ public sealed class CardKeyService
             _db.Buyers.Add(new Buyer
             {
                 CardNo = cardNo,
-                CardStatus = CardStatus.Unused,
+                Stage = sent ? BuyerStage.Sent : BuyerStage.NotSent,
+                AutoApprove = autoApprove,
                 SaleId = saleId,
-                CardSendStatus = sent ? CardSendStatus.Sent : CardSendStatus.NotSent,
                 CardSentAt = sent ? now : null
             });
         }
@@ -77,7 +77,7 @@ public sealed class CardKeyService
         {
             Action = "AdminGenerateCardKeys",
             UserId = actingAdminId,
-            Details = $"count={count};sale={saleId}"
+            Details = $"count={count};sale={saleId};autoApprove={autoApprove}"
         });
         await _db.SaveChangesAsync();
         return new(true, "CardKey.Generated", count);
@@ -92,7 +92,6 @@ public sealed class CardKeyService
         }
 
         buyer.IsDeleted = true;
-        buyer.CardStatus = CardStatus.DeletedOrDisabled;
         _db.AuditLogs.Add(new AuditLog
         {
             Action = "AdminDeleteCardKey",
@@ -104,14 +103,15 @@ public sealed class CardKeyService
     }
 
     public async Task<CardKeyResult> SendAsync(
-        IReadOnlyCollection<long> buyerIds, long saleId, long? actingAdminId)
+        IReadOnlyCollection<long> buyerIds, long? saleId, bool autoApprove, long? actingAdminId)
     {
         if (buyerIds is null || buyerIds.Count == 0)
         {
             return new(false, "CardKey.SendNoneSelected");
         }
 
-        if (!await _db.Users.AnyAsync(u => u.Id == saleId && u.Role == UserRole.Sales))
+        if (saleId is not null
+            && !await _db.Users.AnyAsync(u => u.Id == saleId && u.Role == UserRole.Sales))
         {
             return new(false, "CardKey.SaleInvalid");
         }
@@ -119,7 +119,7 @@ public sealed class CardKeyService
         var targets = await _db.Buyers
             .Where(b => buyerIds.Contains(b.Id)
                 && !b.IsDeleted
-                && b.CardSendStatus == CardSendStatus.NotSent)
+                && b.Stage == BuyerStage.NotSent)
             .ToListAsync();
         if (targets.Count == 0)
         {
@@ -129,32 +129,35 @@ public sealed class CardKeyService
         var now = DateTimeOffset.UtcNow;
         foreach (var buyer in targets)
         {
-            buyer.SaleId = saleId;
-            buyer.CardSendStatus = CardSendStatus.Sent;
+            if (saleId is not null)
+            {
+                buyer.SaleId = saleId;
+            }
+            buyer.Stage = BuyerStage.Sent;
             buyer.CardSentAt = now;
+            buyer.AutoApprove = autoApprove;
         }
 
         _db.AuditLogs.Add(new AuditLog
         {
             Action = "AdminSendCardKeys",
             UserId = actingAdminId,
-            Details = $"sale={saleId};ids={string.Join(",", targets.Select(b => b.Id))}"
+            Details = $"sale={saleId};ids={string.Join(",", targets.Select(b => b.Id))};autoApprove={autoApprove}"
         });
         await _db.SaveChangesAsync();
         return new(true, "CardKey.Sent", targets.Count);
     }
 
     public async Task<IReadOnlyList<CardKeyListItem>> ListAsync(
-        CardStatus? status, long? saleId, string? cardNo, CardSendStatus? sendStatus = null)
+        BuyerStage? stage, long? saleId, string? cardNo, bool sentTab)
     {
         var query = _db.Buyers.Where(b => !b.IsDeleted);
-        if (status is not null)
+        query = sentTab
+            ? query.Where(b => b.Stage != BuyerStage.NotSent)
+            : query.Where(b => b.Stage == BuyerStage.NotSent);
+        if (stage is not null)
         {
-            query = query.Where(b => b.CardStatus == status);
-        }
-        if (sendStatus is not null)
-        {
-            query = query.Where(b => b.CardSendStatus == sendStatus);
+            query = query.Where(b => b.Stage == stage);
         }
         if (saleId is not null)
         {
@@ -173,8 +176,8 @@ public sealed class CardKeyService
         return buyers.Select(b => new CardKeyListItem(
             b.Id,
             b.CardNo,
-            b.CardStatus,
-            b.CardSendStatus,
+            b.Stage,
+            b.AutoApprove,
             b.SaleId,
             b.SaleId is not null && saleNames.TryGetValue(b.SaleId.Value, out var name) ? name : null,
             b.CreatedAt,

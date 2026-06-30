@@ -20,3 +20,140 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+/* ===== Card-key cell: fixed width, truncated, with copy icon ===== */
+.cardno-cell {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+}
+
+.cardno-cell .cardno-text {
+  display: inline-block;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.cardno-cell .copy-link {
+  flex: 0 0 auto;
+  line-height: 1;
+}
+
+.cardno-cell .copy-link.copied {
+  color: #198754;
+}
+
+/* ===== Responsive card-style tables (mobile only) ===== */
+/* On phones, each table row collapses into a card with stacked
+   "label: value" lines. Desktop layout is untouched. */
+@media (max-width: 767.98px) {
+  .table-cards thead {
+    display: none;
+  }
+
+  .table-cards,
+  .table-cards tbody,
+  .table-cards tr,
+  .table-cards td {
+    display: block;
+    width: 100%;
+  }
+
+  .table-cards tr {
+    margin-bottom: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: .5rem;
+    padding: .25rem .75rem;
+    background: #fff;
+  }
+
+  /* table-striped sets row backgrounds; keep cards clean and white */
+  .table-cards.table-striped > tbody > tr > td {
+    background: transparent;
+  }
+
+  .table-cards td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: .4rem 0;
+    border: none;
+    border-bottom: 1px solid #f0f0f0;
+    text-align: right;
+  }
+
+  .table-cards td:last-child {
+    border-bottom: none;
+  }
+
+  .table-cards td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #6c757d;
+    text-align: left;
+    margin-right: auto;
+  }
+
+  /* Cells with empty label hide the label spacer */
+  .table-cards td[data-label=""]::before {
+    content: none;
+  }
+
+  /* Wide-content cells: label on top, content full width below */
+  .table-cards td.td-wide {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+  }
+
+  .table-cards td.td-wide::before {
+    margin-bottom: .25rem;
+  }
+
+  /* Action cells: hide label, buttons go full width and stack */
+  .table-cards td.td-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .table-cards td.td-actions::before {
+    content: none;
+  }
+
+  .table-cards td.td-actions > * {
+    width: 100%;
+  }
+
+  .table-cards td.td-actions .d-flex {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .table-cards td.td-actions .btn,
+  .table-cards td.td-actions form {
+    width: 100%;
+  }
+
+  .table-cards td.td-actions form .btn {
+    width: 100%;
+  }
+
+  /* Standalone action button rows (outside tables): stack full width */
+  .actions-stack {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .actions-stack > .btn,
+  .actions-stack > form {
+    width: 100%;
+  }
+
+  .actions-stack > form .btn {
+    width: 100%;
+  }
+}

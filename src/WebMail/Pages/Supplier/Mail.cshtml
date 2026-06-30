@@ -9,7 +9,21 @@
 
 <p><strong>@L["Supplier.Mail.WindowExpires"]</strong>@Model.ActiveWindowExpiresAt</p>
 
-<p><a class="btn btn-secondary btn-sm" asp-page="Buyers">@L["Common.BackToList"]</a></p>
+<p>
+    @if (User.IsInRole("Administrator"))
+    {
+        <a class="btn btn-secondary btn-sm" asp-page="/Admin/Buyers">@L["Common.BackToList"]</a>
+    }
+    else
+    {
+        <a class="btn btn-secondary btn-sm" asp-page="Buyers">@L["Common.BackToList"]</a>
+    }
+</p>
+
+@if (!string.IsNullOrEmpty(Model.Message))
+{
+    <div class="alert alert-info">@Model.Message</div>
+}
 
 @if (Model.Messages.Count == 0)
 {
@@ -17,7 +31,8 @@
 }
 else
 {
-    <table class="table table-striped">
+    <div class="table-responsive">
+    <table class="table table-striped table-cards">
         <thead>
             <tr>
                 <th>@L["Table.Source"]</th>
@@ -30,17 +45,20 @@ else
             @foreach (var message in Model.Messages)
             {
                 <tr>
-                    <td>
+                    <td data-label="@L["Table.Source"]">
                         @if (message.Folder == MailFolder.Junk)
                         {
                             <span class="badge bg-warning text-dark">@L["Mail.Junk"]</span>
                         }
                     </td>
-                    <td>@message.Sender</td>
-                    <td>@message.Subject</td>
-                    <td>@message.SentAt</td>
+                    <td data-label="@L["Table.Sender"]">@message.Sender</td>
+                    <td data-label="@L["Table.Subject"]">@message.Subject</td>
+                    <td data-label="@L["Table.SentAt"]">@message.SentAt</td>
                 </tr>
             }
         </tbody>
     </table>
+    </div>
 }
+
+<partial name="_ShipmentSection" model="Model" />

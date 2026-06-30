@@ -7,6 +7,7 @@ using WebMail.Data;
 using WebMail.Domain;
 using WebMail.Services;
 using WebMail.Services.EmailProviders;
+using WebMail.Services.Security;
 
 namespace WebMail.Pages.OAuth;
 
@@ -14,15 +15,15 @@ public sealed class CallbackModel(
     WebMailDbContext db,
     BuyerRuleService ruleService,
     IEmailProviderResolver providers,
-    IStringLocalizer<SharedResource> loc) : PageModel
+    IStringLocalizer<SharedResource> loc,
+    IOAuthStateStore stateStore,
+    ITokenProtector tokenProtector) : PageModel
 {
     public string? Card { get; private set; }
     public string? ErrorMessage { get; private set; }
 
-    public async Task<IActionResult> OnGetAsync(string provider, string? code, string? state, string? error, CancellationToken cancellationToken)
+    public async Task<IActionResult> OnGetAsync(string? code, string? state, string? error, CancellationToken cancellationToken)
     {
-        Card = state;
-
         if (!string.IsNullOrWhiteSpace(error))
         {
             ErrorMessage = loc["OAuth.AuthorizationFailed", error];
@@ -35,15 +36,32 @@ public sealed class CallbackModel(
             return Page();
         }
 
-        var buyer = await db.Buyers.FirstOrDefaultAsync(x => x.CardNo == state && !x.IsDeleted, cancellationToken);
-        if (buyer is null || buyer.CardStatus == CardStatus.DeletedOrDisabled)
+        // Validate the state against the server-issued nonce (CSRF) and recover the bound provider
+        // and card. The provider is taken from the encrypted state cookie rather than the query
+        // string, because some providers (e.g. Microsoft) drop query parameters from the redirect URI.
+        var oauthState = stateStore.Consume(state);
+        if (oauthState is null)
+        {
+            ErrorMessage = loc["OAuth.CallbackInvalid"];
+            return Page();
+        }
+
+        var provider = oauthState.Provider;
+        var card = oauthState.Card;
+
+        Card = card;
+
+        var buyer = await db.Buyers.FirstOrDefaultAsync(x => x.CardNo == card && !x.IsDeleted, cancellationToken);
+        if (buyer is null)
         {
             ErrorMessage = loc["Buyer.LinkInvalidOrExpired"];
             return Page();
         }
 
         var emailProvider = providers.Resolve(provider);
-        var authorization = await emailProvider.CompleteAuthorizationAsync(code, state, cancellationToken);
+        // Must match the redirect_uri used to start the flow (same host the buyer began on).
+        var redirectUri = $"{Request.Scheme}://{Request.Host}/oauth/callback";
+        var authorization = await emailProvider.CompleteAuthorizationAsync(code, state, redirectUri, cancellationToken);
         var existing = await db.EmailAccounts.FirstOrDefaultAsync(x => x.BuyerId == buyer.Id, cancellationToken);
 
         var isNewOrChangedAccount = existing is null
@@ -65,7 +83,7 @@ public sealed class CallbackModel(
                 Provider = emailProvider.Name,
                 Email = authorization.Email,
                 ProviderUserId = authorization.ProviderUserId,
-                EncryptedRefreshToken = authorization.RefreshToken
+                EncryptedRefreshToken = tokenProtector.Protect(authorization.RefreshToken)
             });
         }
         else
@@ -73,15 +91,15 @@ public sealed class CallbackModel(
             existing.Provider = emailProvider.Name;
             existing.Email = authorization.Email;
             existing.ProviderUserId = authorization.ProviderUserId;
-            existing.EncryptedRefreshToken = authorization.RefreshToken;
+            existing.EncryptedRefreshToken = tokenProtector.Protect(authorization.RefreshToken);
         }
 
-        buyer.CardStatus = CardStatus.Authorized;
+        buyer.Stage = BuyerStage.Submitted;
         buyer.CardUsedAt ??= DateTimeOffset.UtcNow;
         if (isNewOrChangedAccount)
         {
             buyer.EmailStatus = EmailAuthorizationStatus.Authorized;
-            buyer.BuyerStatus = BuyerStatus.PendingReview;
+            buyer.ReviewStatus = buyer.AutoApprove ? ReviewStatus.Approved : ReviewStatus.Pending;
         }
         else if (buyer.EmailStatus == EmailAuthorizationStatus.Abnormal)
         {

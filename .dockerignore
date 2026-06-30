@@ -1,0 +1,28 @@
+# Build artifacts
+**/bin/
+**/obj/
+
+# Local SQLite dev databases
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+# Tests are not needed for the runtime image
+tests/
+
+# IDE / VCS / scratch
+.git/
+.gitignore
+.vs/
+.idea/
+.superpowers/
+.agents/
+.codex/
+docs/
+**/*.user
+
+# Docker / env
+docker-compose.yml
+.env
+.env.example
+README.md

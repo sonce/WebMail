@@ -16,7 +16,7 @@ public sealed class SupplierBuyersModelTests
     public async Task SetStatusMarksFailedAndWritesAudit()
     {
         await using var db = CreateDb();
-        var buyer = new Buyer { CardNo = "c1", BuyerStatus = BuyerStatus.Approved, EmailStatus = EmailAuthorizationStatus.Authorized };
+        var buyer = new Buyer { CardNo = "c1", Stage = BuyerStage.Submitted, ReviewStatus = ReviewStatus.Approved, EmailStatus = EmailAuthorizationStatus.Authorized };
         db.Buyers.Add(buyer);
         await db.SaveChangesAsync();
         db.BuyerSupplierAssignments.Add(new BuyerSupplierAssignment { BuyerId = buyer.Id, SupplierId = 3 });
@@ -34,7 +34,7 @@ public sealed class SupplierBuyersModelTests
     public async Task SetStatusBlockedWhenNotApproved()
     {
         await using var db = CreateDb();
-        var buyer = new Buyer { CardNo = "c2", BuyerStatus = BuyerStatus.PendingReview, EmailStatus = EmailAuthorizationStatus.Authorized };
+        var buyer = new Buyer { CardNo = "c2", Stage = BuyerStage.Submitted, ReviewStatus = ReviewStatus.Pending, EmailStatus = EmailAuthorizationStatus.Authorized };
         db.Buyers.Add(buyer);
         await db.SaveChangesAsync();
         db.BuyerSupplierAssignments.Add(new BuyerSupplierAssignment { BuyerId = buyer.Id, SupplierId = 3 });
@@ -50,7 +50,7 @@ public sealed class SupplierBuyersModelTests
     public async Task SetStatusBlockedForOtherSupplier()
     {
         await using var db = CreateDb();
-        var buyer = new Buyer { CardNo = "c3", BuyerStatus = BuyerStatus.Approved, EmailStatus = EmailAuthorizationStatus.Authorized };
+        var buyer = new Buyer { CardNo = "c3", Stage = BuyerStage.Submitted, ReviewStatus = ReviewStatus.Approved, EmailStatus = EmailAuthorizationStatus.Authorized };
         db.Buyers.Add(buyer);
         await db.SaveChangesAsync();
         db.BuyerSupplierAssignments.Add(new BuyerSupplierAssignment { BuyerId = buyer.Id, SupplierId = 99 });

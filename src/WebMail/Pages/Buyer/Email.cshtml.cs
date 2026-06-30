@@ -24,9 +24,9 @@ public class EmailModel : PageModel
 
     public string? Card { get; private set; }
     public string? ErrorMessage { get; private set; }
-    public CardStatus CardStatus { get; private set; }
+    public BuyerStage Stage { get; private set; }
     public EmailAuthorizationStatus EmailStatus { get; private set; }
-    public BuyerStatus BuyerStatus { get; private set; }
+    public ReviewStatus ReviewStatus { get; private set; }
     public SupplierProcessingStatus SupplierStatus { get; private set; }
     public BuyerMailAction Actions { get; private set; }
     public EmailAccount? EmailAccount { get; private set; }
@@ -68,8 +68,9 @@ public class EmailModel : PageModel
         {
             _db.EmailAccounts.Remove(account);
         }
+        buyer.Stage = BuyerStage.NotSubmitted;
         buyer.EmailStatus = EmailAuthorizationStatus.NotAuthorized;
-        buyer.BuyerStatus = BuyerStatus.NotSubmitted;
+        buyer.ReviewStatus = ReviewStatus.Pending;
         buyer.SupplierStatus = SupplierProcessingStatus.Unprocessed;
         await _db.SaveChangesAsync();
 
@@ -100,9 +101,10 @@ public class EmailModel : PageModel
         }
         buyer.EmailStatus = EmailAuthorizationStatus.NotAuthorized;
         // Keep Approved+Completed as the terminal "cleared" state; otherwise reset to a fresh cycle.
-        if (!(buyer.BuyerStatus == BuyerStatus.Approved && buyer.SupplierStatus == SupplierProcessingStatus.Completed))
+        if (!(buyer.ReviewStatus == ReviewStatus.Approved && buyer.SupplierStatus == SupplierProcessingStatus.Completed))
         {
-            buyer.BuyerStatus = BuyerStatus.NotSubmitted;
+            buyer.Stage = BuyerStage.NotSubmitted;
+            buyer.ReviewStatus = ReviewStatus.Pending;
             buyer.SupplierStatus = SupplierProcessingStatus.Unprocessed;
         }
         await _db.SaveChangesAsync();
@@ -118,7 +120,7 @@ public class EmailModel : PageModel
         }
 
         var buyer = await _db.Buyers.FirstOrDefaultAsync(b => b.CardNo == card && !b.IsDeleted);
-        if (buyer is null || buyer.CardStatus == CardStatus.DeletedOrDisabled)
+        if (buyer is null)
         {
             return null;
         }
@@ -128,9 +130,9 @@ public class EmailModel : PageModel
 
     private IActionResult Render(Domain.Buyer buyer, EmailAccount? account)
     {
-        CardStatus = buyer.CardStatus;
+        Stage = buyer.Stage;
         EmailStatus = buyer.EmailStatus;
-        BuyerStatus = buyer.BuyerStatus;
+        ReviewStatus = buyer.ReviewStatus;
         SupplierStatus = buyer.SupplierStatus;
         Actions = _ruleService.ResolveBuyerMailAction(buyer);
         EmailAccount = account;

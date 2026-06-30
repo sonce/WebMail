@@ -3,10 +3,11 @@ using Microsoft.Extensions.Configuration;
 using WebMail.Data;
 using WebMail.Domain;
 using WebMail.Services.EmailProviders;
+using WebMail.Services.Security;
 
 namespace WebMail.Services.Background;
 
-public sealed class MailSyncProcessor(IEmailProviderResolver providers, IConfiguration configuration)
+public sealed class MailSyncProcessor(IEmailProviderResolver providers, IConfiguration configuration, ITokenProtector tokenProtector)
 {
     public async Task<int> ProcessPendingAsync(WebMailDbContext db, DateTimeOffset now, CancellationToken cancellationToken)
     {
@@ -34,10 +35,11 @@ public sealed class MailSyncProcessor(IEmailProviderResolver providers, IConfigu
             try
             {
                 var account = await db.EmailAccounts.FirstOrDefaultAsync(x => x.BuyerId == job.BuyerId, cancellationToken);
-                if (account is not null && allowedSenders.Count > 0)
+                if (account is not null)
                 {
                     var provider = providers.Resolve(account.Provider);
-                    var messages = await provider.FetchMessagesAsync(account.EncryptedRefreshToken, allowedSenders, since, cancellationToken);
+                    var refreshToken = tokenProtector.Unprotect(account.EncryptedRefreshToken);
+                    var messages = await provider.FetchMessagesAsync(refreshToken, allowedSenders, since, cancellationToken);
                     await UpsertMessagesAsync(db, account, messages, cancellationToken);
                 }
 

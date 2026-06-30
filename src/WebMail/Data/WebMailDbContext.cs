@@ -15,6 +15,7 @@ public sealed class WebMailDbContext(DbContextOptions<WebMailDbContext> options)
     public DbSet<ActiveSyncWindow> ActiveSyncWindows => Set<ActiveSyncWindow>();
     public DbSet<SyncJob> SyncJobs => Set<SyncJob>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<Shipment> Shipments => Set<Shipment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -26,6 +27,8 @@ public sealed class WebMailDbContext(DbContextOptions<WebMailDbContext> options)
         modelBuilder.Entity<AllowedSender>().HasIndex(x => x.EmailAddress).IsUnique();
         modelBuilder.Entity<BuyerSupplierAssignment>().HasIndex(x => x.BuyerId).IsUnique();
         modelBuilder.Entity<ActiveSyncWindow>().HasIndex(x => x.BuyerId).IsUnique();
+        modelBuilder.Entity<Shipment>().HasIndex(x => x.BuyerId);
+        modelBuilder.Entity<Shipment>().HasIndex(x => x.ShipmentNo).IsUnique();
 
         // SQLite cannot ORDER BY / compare DateTimeOffset natively. Store every
         // DateTimeOffset as UTC ticks (a sortable long) so SQL ordering works.

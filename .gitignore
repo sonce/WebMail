@@ -16,3 +16,7 @@ obj/
 
 # SDD scratch (workflow scaffolding)
 .superpowers/
+
+# Docker env (secrets)
+.env
+

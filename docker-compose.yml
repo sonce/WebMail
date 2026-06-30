@@ -1,0 +1,28 @@
+services:
+  webmail:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: webmail:latest
+    container_name: webmail
+    restart: unless-stopped
+    ports:
+      # host:container — point your Nginx reverse proxy at 127.0.0.1:8080
+      - "127.0.0.1:8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      # SQLite file + DataProtection keys persist on the named volume below
+      ConnectionStrings__Default: "Data Source=/app/data/webmail.db"
+      DataProtection__KeysPath: "/app/data/dpkeys"
+      # Secrets come from .env (never commit real values)
+      GoogleOAuth__ClientSecret: "${GOOGLE_CLIENT_SECRET}"
+      OutlookOAuth__ClientSecret: "${OUTLOOK_CLIENT_SECRET}"
+      Seed__AdminPassword: "${ADMIN_PASSWORD}"
+      # Public base URL used to build the OAuth redirect_uri for background Outlook token
+      # refresh (no request context there). Use one of your registered callback hosts.
+      WebMail__PublicBaseUrl: "${WEBMAIL_PUBLIC_BASE_URL}"
+    volumes:
+      - webmail-data:/app/data
+
+volumes:
+  webmail-data:

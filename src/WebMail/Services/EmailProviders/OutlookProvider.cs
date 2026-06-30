@@ -14,13 +14,12 @@ public sealed class OutlookProvider(IConfiguration configuration, HttpClient htt
 
     public string Name => "Outlook";
 
-    public OAuthStartResult BuildAuthorizationUrl(string cardNo)
+    public OAuthStartResult BuildAuthorizationUrl(string state, string redirectUri)
     {
-        var state = cardNo;
         var query = new Dictionary<string, string?>
         {
             ["client_id"] = RequiredConfig("OutlookOAuth:ClientId"),
-            ["redirect_uri"] = RequiredConfig("OutlookOAuth:RedirectUri"),
+            ["redirect_uri"] = redirectUri,
             ["response_type"] = "code",
             ["scope"] = Scope,
             ["response_mode"] = "query",
@@ -30,14 +29,14 @@ public sealed class OutlookProvider(IConfiguration configuration, HttpClient htt
         return new OAuthStartResult(Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(AuthorizeEndpoint, query), state);
     }
 
-    public async Task<OAuthCallbackResult> CompleteAuthorizationAsync(string code, string state, CancellationToken cancellationToken)
+    public async Task<OAuthCallbackResult> CompleteAuthorizationAsync(string code, string state, string redirectUri, CancellationToken cancellationToken)
     {
         var token = await RequestTokenAsync(new Dictionary<string, string>
         {
             ["client_id"] = RequiredConfig("OutlookOAuth:ClientId"),
             ["client_secret"] = RequiredConfig("OutlookOAuth:ClientSecret"),
             ["code"] = code,
-            ["redirect_uri"] = RequiredConfig("OutlookOAuth:RedirectUri"),
+            ["redirect_uri"] = redirectUri,
             ["grant_type"] = "authorization_code",
             ["scope"] = Scope
         }, cancellationToken);
@@ -72,7 +71,11 @@ public sealed class OutlookProvider(IConfiguration configuration, HttpClient htt
             ["client_id"] = RequiredConfig("OutlookOAuth:ClientId"),
             ["client_secret"] = RequiredConfig("OutlookOAuth:ClientSecret"),
             ["refresh_token"] = refreshToken,
-            ["redirect_uri"] = RequiredConfig("OutlookOAuth:RedirectUri"),
+            // Background refresh has no HTTP request context, so the redirect_uri cannot be
+            // derived from the buyer's host. Microsoft only requires a registered redirect_uri
+            // here (it need not match the one used at authorization), so the deployment's public
+            // base URL is used.
+            ["redirect_uri"] = BuildPublicRedirectUri(),
             ["grant_type"] = "refresh_token",
             ["scope"] = Scope
         }, cancellationToken);
@@ -202,6 +205,16 @@ public sealed class OutlookProvider(IConfiguration configuration, HttpClient htt
 
     private string RequiredConfig(string key) =>
         configuration[key] ?? throw new InvalidOperationException($"{key} is required for Outlook OAuth.");
+
+    private string BuildPublicRedirectUri()
+    {
+        var baseUrl = configuration["WebMail:PublicBaseUrl"];
+        if (string.IsNullOrWhiteSpace(baseUrl))
+        {
+            throw new InvalidOperationException("WebMail:PublicBaseUrl is required for Outlook background token refresh.");
+        }
+        return baseUrl.TrimEnd('/') + "/oauth/callback";
+    }
 
     private static async Task EnsureSuccessOrThrowAsync(HttpResponseMessage response, string context, CancellationToken cancellationToken)
     {

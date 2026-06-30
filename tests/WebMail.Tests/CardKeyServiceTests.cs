@@ -16,16 +16,15 @@ public sealed class CardKeyServiceTests
         await db.SaveChangesAsync();
         var service = new CardKeyService(db, new CardGenerationService());
 
-        var result = await service.GenerateAsync(3, saleId: sale.Id, actingAdminId: 1);
+        var result = await service.GenerateAsync(3, saleId: sale.Id, autoApprove: false, actingAdminId: 1);
 
         Assert.True(result.Success);
         Assert.Equal("CardKey.Generated", result.Message);
         Assert.Equal(3, result.GeneratedCount);
         var cards = await db.Buyers.ToListAsync();
         Assert.Equal(3, cards.Count);
-        Assert.All(cards, c => Assert.Equal(CardStatus.Unused, c.CardStatus));
+        Assert.All(cards, c => Assert.Equal(BuyerStage.Sent, c.Stage));
         Assert.All(cards, c => Assert.Equal(sale.Id, c.SaleId));
-        Assert.All(cards, c => Assert.Equal(CardSendStatus.Sent, c.CardSendStatus));
         Assert.All(cards, c => Assert.NotNull(c.CardSentAt));
         Assert.Equal(3, cards.Select(c => c.CardNo).Distinct().Count());
     }
@@ -36,13 +35,39 @@ public sealed class CardKeyServiceTests
         await using var db = CreateDb();
         var service = new CardKeyService(db, new CardGenerationService());
 
-        var result = await service.GenerateAsync(1, saleId: null, actingAdminId: 1);
+        var result = await service.GenerateAsync(1, saleId: null, autoApprove: false, actingAdminId: 1);
 
         Assert.True(result.Success);
         var card = await db.Buyers.SingleAsync();
         Assert.Null(card.SaleId);
-        Assert.Equal(CardSendStatus.NotSent, card.CardSendStatus);
+        Assert.Equal(BuyerStage.NotSent, card.Stage);
         Assert.Null(card.CardSentAt);
+    }
+
+    [Fact]
+    public async Task GenerateWithAutoApproveMarksBuyers()
+    {
+        await using var db = CreateDb();
+        var service = new CardKeyService(db, new CardGenerationService());
+
+        var result = await service.GenerateAsync(2, null, autoApprove: true, actingAdminId: null);
+
+        Assert.True(result.Success);
+        var cards = await db.Buyers.ToListAsync();
+        Assert.Equal(2, cards.Count);
+        Assert.All(cards, c => Assert.True(c.AutoApprove));
+    }
+
+    [Fact]
+    public async Task GenerateWithoutAutoApproveLeavesFlagFalse()
+    {
+        await using var db = CreateDb();
+        var service = new CardKeyService(db, new CardGenerationService());
+
+        await service.GenerateAsync(1, null, autoApprove: false, actingAdminId: null);
+
+        var card = await db.Buyers.SingleAsync();
+        Assert.False(card.AutoApprove);
     }
 
     [Theory]
@@ -53,7 +78,7 @@ public sealed class CardKeyServiceTests
         await using var db = CreateDb();
         var service = new CardKeyService(db, new CardGenerationService());
 
-        var result = await service.GenerateAsync(count, saleId: null, actingAdminId: 1);
+        var result = await service.GenerateAsync(count, saleId: null, autoApprove: false, actingAdminId: 1);
 
         Assert.False(result.Success);
         Assert.Equal("CardKey.CountInvalid", result.Message);
@@ -68,7 +93,7 @@ public sealed class CardKeyServiceTests
         await db.SaveChangesAsync();
         var service = new CardKeyService(db, new CardGenerationService());
 
-        var result = await service.GenerateAsync(1, saleId: 9, actingAdminId: 1);
+        var result = await service.GenerateAsync(1, saleId: 9, autoApprove: false, actingAdminId: 1);
 
         Assert.False(result.Success);
         Assert.Equal("CardKey.SaleInvalid", result.Message);
@@ -76,10 +101,10 @@ public sealed class CardKeyServiceTests
     }
 
     [Fact]
-    public async Task DeleteSoftDeletesAndMarksDisabled()
+    public async Task DeleteSoftDeletesCard()
     {
         await using var db = CreateDb();
-        db.Buyers.Add(new Buyer { Id = 1, CardNo = "c1", CardStatus = CardStatus.Unused });
+        db.Buyers.Add(new Buyer { Id = 1, CardNo = "c1", Stage = BuyerStage.NotSent });
         await db.SaveChangesAsync();
         var service = new CardKeyService(db, new CardGenerationService());
 
@@ -88,7 +113,6 @@ public sealed class CardKeyServiceTests
         Assert.True(result.Success);
         var buyer = await db.Buyers.SingleAsync();
         Assert.True(buyer.IsDeleted);
-        Assert.Equal(CardStatus.DeletedOrDisabled, buyer.CardStatus);
     }
 
     [Fact]
@@ -104,26 +128,37 @@ public sealed class CardKeyServiceTests
     }
 
     [Fact]
-    public async Task ListFiltersByStatusSaleAndCardAndExcludesDeleted()
+    public async Task ListFiltersByStageSaleAndCardAndExcludesDeleted()
     {
         await using var db = CreateDb();
         SeedSale(db, id: 5, name: "Alice");
         db.Buyers.AddRange(
-            new Buyer { Id = 1, CardNo = "alpha", CardStatus = CardStatus.Unused, SaleId = 5 },
-            new Buyer { Id = 2, CardNo = "beta", CardStatus = CardStatus.Authorized, SaleId = 5 },
-            new Buyer { Id = 3, CardNo = "gamma", CardStatus = CardStatus.Unused, SaleId = null },
-            new Buyer { Id = 4, CardNo = "alpha-del", CardStatus = CardStatus.Unused, SaleId = 5, IsDeleted = true });
+            new Buyer { Id = 1, CardNo = "alpha", Stage = BuyerStage.Sent, SaleId = 5 },
+            new Buyer { Id = 2, CardNo = "beta", Stage = BuyerStage.Submitted, SaleId = 5 },
+            new Buyer { Id = 3, CardNo = "gamma", Stage = BuyerStage.NotSent, SaleId = null },
+            new Buyer { Id = 4, CardNo = "alpha-del", Stage = BuyerStage.Sent, SaleId = 5, IsDeleted = true });
         await db.SaveChangesAsync();
         var service = new CardKeyService(db, new CardGenerationService());
 
-        var byStatus = await service.ListAsync(CardStatus.Unused, null, null);
-        Assert.Equal(new[] { 1L, 3L }, byStatus.Select(c => c.Id).OrderBy(x => x).ToArray());
+        // Not-sent tab returns only NotSent inventory.
+        var notSentTab = await service.ListAsync(null, null, null, sentTab: false);
+        Assert.Equal(new[] { 3L }, notSentTab.Select(c => c.Id).ToArray());
 
-        var bySale = await service.ListAsync(null, 5, null);
+        // Sent tab excludes NotSent and deleted.
+        var sentTab = await service.ListAsync(null, null, null, sentTab: true);
+        Assert.Equal(new[] { 1L, 2L }, sentTab.Select(c => c.Id).OrderBy(x => x).ToArray());
+
+        // Stage filter on sent tab.
+        var byStage = await service.ListAsync(BuyerStage.Submitted, null, null, sentTab: true);
+        Assert.Equal(new[] { 2L }, byStage.Select(c => c.Id).ToArray());
+
+        // Sale filter.
+        var bySale = await service.ListAsync(null, 5, null, sentTab: true);
         Assert.Equal(new[] { 1L, 2L }, bySale.Select(c => c.Id).OrderBy(x => x).ToArray());
         Assert.All(bySale, c => Assert.Equal("Alice", c.SaleDisplayName));
 
-        var byCard = await service.ListAsync(null, null, "alph");
+        // Card-number filter, deleted excluded.
+        var byCard = await service.ListAsync(null, null, "alph", sentTab: true);
         Assert.Equal(new[] { 1L }, byCard.Select(c => c.Id).ToArray());
     }
 
@@ -148,20 +183,38 @@ public sealed class CardKeyServiceTests
     {
         await using var db = CreateDb();
         SeedSale(db, id: 5, name: "Alice");
-        db.Buyers.Add(new Buyer { Id = 1, CardNo = "c1", CardSendStatus = CardSendStatus.NotSent });
+        db.Buyers.Add(new Buyer { Id = 1, CardNo = "c1", Stage = BuyerStage.NotSent });
         await db.SaveChangesAsync();
         var service = new CardKeyService(db, new CardGenerationService());
 
-        var result = await service.SendAsync(new[] { 1L }, saleId: 5, actingAdminId: 7);
+        var result = await service.SendAsync(new[] { 1L }, saleId: 5, autoApprove: false, actingAdminId: 7);
 
         Assert.True(result.Success);
         Assert.Equal("CardKey.Sent", result.Message);
         Assert.Equal(1, result.GeneratedCount);
         var card = await db.Buyers.SingleAsync();
         Assert.Equal(5, card.SaleId);
-        Assert.Equal(CardSendStatus.Sent, card.CardSendStatus);
+        Assert.Equal(BuyerStage.Sent, card.Stage);
         Assert.NotNull(card.CardSentAt);
         Assert.Equal(1, await db.AuditLogs.CountAsync(a => a.Action == "AdminSendCardKeys"));
+    }
+
+    [Fact]
+    public async Task SendWithoutSaleMarksSentAndLeavesSaleUnassigned()
+    {
+        await using var db = CreateDb();
+        db.Buyers.Add(new Buyer { Id = 1, CardNo = "c1", Stage = BuyerStage.NotSent });
+        await db.SaveChangesAsync();
+        var service = new CardKeyService(db, new CardGenerationService());
+
+        var result = await service.SendAsync(new[] { 1L }, saleId: null, autoApprove: false, actingAdminId: 7);
+
+        Assert.True(result.Success);
+        Assert.Equal("CardKey.Sent", result.Message);
+        var card = await db.Buyers.SingleAsync();
+        Assert.Null(card.SaleId);
+        Assert.Equal(BuyerStage.Sent, card.Stage);
+        Assert.NotNull(card.CardSentAt);
     }
 
     [Fact]
@@ -170,16 +223,16 @@ public sealed class CardKeyServiceTests
         await using var db = CreateDb();
         SeedSale(db, id: 5, name: "Alice");
         db.Buyers.AddRange(
-            new Buyer { Id = 1, CardNo = "c1", CardSendStatus = CardSendStatus.NotSent },
-            new Buyer { Id = 2, CardNo = "c2", CardSendStatus = CardSendStatus.NotSent });
+            new Buyer { Id = 1, CardNo = "c1", Stage = BuyerStage.NotSent },
+            new Buyer { Id = 2, CardNo = "c2", Stage = BuyerStage.NotSent });
         await db.SaveChangesAsync();
         var service = new CardKeyService(db, new CardGenerationService());
 
-        var result = await service.SendAsync(new[] { 1L, 2L }, saleId: 5, actingAdminId: 7);
+        var result = await service.SendAsync(new[] { 1L, 2L }, saleId: 5, autoApprove: false, actingAdminId: 7);
 
         Assert.True(result.Success);
         Assert.Equal(2, result.GeneratedCount);
-        Assert.All(await db.Buyers.ToListAsync(), c => Assert.Equal(CardSendStatus.Sent, c.CardSendStatus));
+        Assert.All(await db.Buyers.ToListAsync(), c => Assert.Equal(BuyerStage.Sent, c.Stage));
     }
 
     [Fact]
@@ -188,18 +241,18 @@ public sealed class CardKeyServiceTests
         await using var db = CreateDb();
         SeedSale(db, id: 5, name: "Alice");
         db.Buyers.AddRange(
-            new Buyer { Id = 1, CardNo = "c1", CardSendStatus = CardSendStatus.NotSent },
-            new Buyer { Id = 2, CardNo = "c2", CardSendStatus = CardSendStatus.Sent, SaleId = 6 });
+            new Buyer { Id = 1, CardNo = "c1", Stage = BuyerStage.NotSent },
+            new Buyer { Id = 2, CardNo = "c2", Stage = BuyerStage.Sent, SaleId = 6 });
         await db.SaveChangesAsync();
         var service = new CardKeyService(db, new CardGenerationService());
 
-        var result = await service.SendAsync(new[] { 1L, 2L }, saleId: 5, actingAdminId: 7);
+        var result = await service.SendAsync(new[] { 1L, 2L }, saleId: 5, autoApprove: false, actingAdminId: 7);
 
         Assert.True(result.Success);
         Assert.Equal(1, result.GeneratedCount);
         var c1 = await db.Buyers.SingleAsync(b => b.Id == 1);
         var c2 = await db.Buyers.SingleAsync(b => b.Id == 2);
-        Assert.Equal(CardSendStatus.Sent, c1.CardSendStatus);
+        Assert.Equal(BuyerStage.Sent, c1.Stage);
         Assert.Equal(5, c1.SaleId);
         Assert.Equal(6, c2.SaleId); // already-sent card untouched
     }
@@ -210,11 +263,11 @@ public sealed class CardKeyServiceTests
         await using var db = CreateDb();
         SeedSale(db, id: 5, name: "Alice");
         SeedSale(db, id: 6, name: "Bob");
-        db.Buyers.Add(new Buyer { Id = 1, CardNo = "c1", CardSendStatus = CardSendStatus.Sent, SaleId = 6 });
+        db.Buyers.Add(new Buyer { Id = 1, CardNo = "c1", Stage = BuyerStage.Sent, SaleId = 6 });
         await db.SaveChangesAsync();
         var service = new CardKeyService(db, new CardGenerationService());
 
-        var result = await service.SendAsync(new[] { 1L }, saleId: 5, actingAdminId: 7);
+        var result = await service.SendAsync(new[] { 1L }, saleId: 5, autoApprove: false, actingAdminId: 7);
 
         Assert.False(result.Success);
         Assert.Equal("CardKey.SendNoneSelected", result.Message);
@@ -227,15 +280,15 @@ public sealed class CardKeyServiceTests
     {
         await using var db = CreateDb();
         db.Users.Add(new AppUser { Id = 9, UserName = "sup", DisplayName = "Sup", Role = UserRole.Supplier });
-        db.Buyers.Add(new Buyer { Id = 1, CardNo = "c1", CardSendStatus = CardSendStatus.NotSent });
+        db.Buyers.Add(new Buyer { Id = 1, CardNo = "c1", Stage = BuyerStage.NotSent });
         await db.SaveChangesAsync();
         var service = new CardKeyService(db, new CardGenerationService());
 
-        var result = await service.SendAsync(new[] { 1L }, saleId: 9, actingAdminId: 7);
+        var result = await service.SendAsync(new[] { 1L }, saleId: 9, autoApprove: false, actingAdminId: 7);
 
         Assert.False(result.Success);
         Assert.Equal("CardKey.SaleInvalid", result.Message);
-        Assert.Equal(CardSendStatus.NotSent, (await db.Buyers.SingleAsync()).CardSendStatus);
+        Assert.Equal(BuyerStage.NotSent, (await db.Buyers.SingleAsync()).Stage);
     }
 
     [Fact]
@@ -246,26 +299,55 @@ public sealed class CardKeyServiceTests
         await db.SaveChangesAsync();
         var service = new CardKeyService(db, new CardGenerationService());
 
-        var result = await service.SendAsync(Array.Empty<long>(), saleId: 5, actingAdminId: 7);
+        var result = await service.SendAsync(Array.Empty<long>(), saleId: 5, autoApprove: false, actingAdminId: 7);
 
         Assert.False(result.Success);
         Assert.Equal("CardKey.SendNoneSelected", result.Message);
     }
 
     [Fact]
-    public async Task ListFiltersBySendStatus()
+    public async Task SendWithAutoApproveOverridesEveryTarget()
+    {
+        await using var db = CreateDb();
+        var service = new CardKeyService(db, new CardGenerationService());
+        db.Buyers.Add(new Buyer { Id = 1, CardNo = "a", Stage = BuyerStage.NotSent, AutoApprove = true });
+        db.Buyers.Add(new Buyer { Id = 2, CardNo = "b", Stage = BuyerStage.NotSent, AutoApprove = false });
+        await db.SaveChangesAsync();
+
+        var result = await service.SendAsync(new[] { 1L, 2L }, saleId: null, autoApprove: true, actingAdminId: null);
+
+        Assert.True(result.Success);
+        Assert.All(await db.Buyers.ToListAsync(), b => Assert.True(b.AutoApprove));
+    }
+
+    [Fact]
+    public async Task SendWithoutAutoApproveClearsPreviouslyAutoApproved()
+    {
+        await using var db = CreateDb();
+        var service = new CardKeyService(db, new CardGenerationService());
+        db.Buyers.Add(new Buyer { Id = 1, CardNo = "a", Stage = BuyerStage.NotSent, AutoApprove = true });
+        await db.SaveChangesAsync();
+
+        await service.SendAsync(new[] { 1L }, saleId: null, autoApprove: false, actingAdminId: null);
+
+        var buyer = await db.Buyers.SingleAsync();
+        Assert.False(buyer.AutoApprove);
+    }
+
+    [Fact]
+    public async Task ListFiltersBySentTab()
     {
         await using var db = CreateDb();
         db.Buyers.AddRange(
-            new Buyer { Id = 1, CardNo = "c1", CardSendStatus = CardSendStatus.NotSent },
-            new Buyer { Id = 2, CardNo = "c2", CardSendStatus = CardSendStatus.Sent, SaleId = null });
+            new Buyer { Id = 1, CardNo = "c1", Stage = BuyerStage.NotSent },
+            new Buyer { Id = 2, CardNo = "c2", Stage = BuyerStage.Sent, SaleId = null });
         await db.SaveChangesAsync();
         var service = new CardKeyService(db, new CardGenerationService());
 
-        var notSent = await service.ListAsync(null, null, null, CardSendStatus.NotSent);
+        var notSent = await service.ListAsync(null, null, null, sentTab: false);
         Assert.Equal(new[] { 1L }, notSent.Select(c => c.Id).ToArray());
 
-        var sent = await service.ListAsync(null, null, null, CardSendStatus.Sent);
+        var sent = await service.ListAsync(null, null, null, sentTab: true);
         Assert.Equal(new[] { 2L }, sent.Select(c => c.Id).ToArray());
     }
 

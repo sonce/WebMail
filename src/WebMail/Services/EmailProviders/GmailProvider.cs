@@ -15,24 +15,23 @@ public sealed class GmailProvider(IConfiguration configuration, HttpClient httpC
 {
     public string Name => "Gmail";
 
-    public OAuthStartResult BuildAuthorizationUrl(string cardNo)
+    public OAuthStartResult BuildAuthorizationUrl(string state, string redirectUri)
     {
         var clientId = RequiredConfig("GoogleOAuth:ClientId");
-        var redirectUri = Uri.EscapeDataString(RequiredConfig("GoogleOAuth:RedirectUri"));
-        var state = cardNo;
+        var escapedRedirect = Uri.EscapeDataString(redirectUri);
         var scope = Uri.EscapeDataString("https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email");
-        var url = $"https://accounts.google.com/o/oauth2/v2/auth?client_id={clientId}&redirect_uri={redirectUri}&response_type=code&scope={scope}&access_type=offline&prompt=consent&state={Uri.EscapeDataString(state)}";
+        var url = $"https://accounts.google.com/o/oauth2/v2/auth?client_id={clientId}&redirect_uri={escapedRedirect}&response_type=code&scope={scope}&access_type=offline&prompt=consent&state={Uri.EscapeDataString(state)}";
         return new OAuthStartResult(url, state);
     }
 
-    public async Task<OAuthCallbackResult> CompleteAuthorizationAsync(string code, string state, CancellationToken cancellationToken)
+    public async Task<OAuthCallbackResult> CompleteAuthorizationAsync(string code, string state, string redirectUri, CancellationToken cancellationToken)
     {
         using var tokenResponse = await httpClient.PostAsync("https://oauth2.googleapis.com/token", new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["code"] = code,
             ["client_id"] = RequiredConfig("GoogleOAuth:ClientId"),
             ["client_secret"] = RequiredConfig("GoogleOAuth:ClientSecret"),
-            ["redirect_uri"] = RequiredConfig("GoogleOAuth:RedirectUri"),
+            ["redirect_uri"] = redirectUri,
             ["grant_type"] = "authorization_code"
         }), cancellationToken);
         await EnsureSuccessOrThrowAsync(tokenResponse, "Google token exchange", cancellationToken);

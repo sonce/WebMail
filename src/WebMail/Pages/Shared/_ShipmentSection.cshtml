@@ -1,0 +1,80 @@
+@using WebMail.Domain
+@model WebMail.Pages.Supplier.MailModel
+
+<div class="d-flex align-items-center gap-2 mt-4 mb-2">
+    <h2 class="h5 mb-0">@L["Shipment.SectionTitle"]</h2>
+    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addShipmentModal">
+        @L["Action.AddShipment"]
+    </button>
+</div>
+
+@if (Model.Shipments.Count == 0)
+{
+    <p class="text-muted">@L["Shipment.None"]</p>
+}
+else
+{
+    <div class="table-responsive">
+    <table class="table table-striped table-cards">
+        <thead>
+            <tr>
+                <th>@L["Shipment.Image"]</th>
+                <th>@L["Shipment.No"]</th>
+                <th>@L["Shipment.Description"]</th>
+                <th>@L["Shipment.CreatedAt"]</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var s in Model.Shipments)
+            {
+                <tr>
+                    <td data-label="@L["Shipment.Image"]">
+                        <a href="/Shipment/Image/@s.Id" target="_blank">
+                            <img src="/Shipment/Image/@s.Id" alt="" style="max-height:64px;max-width:96px;object-fit:cover;" />
+                        </a>
+                    </td>
+                    <td data-label="@L["Shipment.No"]">@s.ShipmentNo</td>
+                    <td data-label="@L["Shipment.Description"]">@s.Description</td>
+                    <td data-label="@L["Shipment.CreatedAt"]">@s.CreatedAt</td>
+                    <td class="td-actions">
+                        <form method="post" asp-page-handler="DeleteShipment"
+                              onsubmit="return confirm('@L["Shipment.DeleteConfirm"]');">
+                            <input type="hidden" name="shipmentId" value="@s.Id" />
+                            <input type="hidden" name="buyerId" value="@Model.BuyerId" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger">@L["Shipment.Delete"]</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    </div>
+}
+
+<div class="modal fade" id="addShipmentModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" enctype="multipart/form-data" asp-page-handler="AddShipment">
+        <div class="modal-header">
+          <h5 class="modal-title">@L["Action.AddShipment"]</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="buyerId" value="@Model.BuyerId" />
+          <div class="mb-3">
+            <label class="form-label">@L["Shipment.Image"]</label>
+            <input type="file" name="image" accept="image/*" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">@L["Shipment.Description"]</label>
+            <textarea name="description" rows="3" class="form-control"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">@L["Shipment.Submit"]</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

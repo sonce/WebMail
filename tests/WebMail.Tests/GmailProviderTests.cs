@@ -17,6 +17,15 @@ public sealed class GmailProviderTests
     }
 
     [Fact]
+    public void BuildGmailQueryOmitsFromFilterWhenNoSenders()
+    {
+        var since = new DateTimeOffset(2026, 5, 27, 0, 0, 0, TimeSpan.Zero);
+        var query = GmailProvider.BuildGmailQuery([], since);
+
+        Assert.Equal("after:2026/05/27", query);
+    }
+
+    [Fact]
     public void MapFolderReturnsJunkWhenSpamLabelPresent() =>
         Assert.Equal(MailFolder.Junk, GmailProvider.MapFolder(["SPAM", "CATEGORY_PERSONAL"]));
 

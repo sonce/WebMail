@@ -16,12 +16,12 @@
 @if (!string.IsNullOrEmpty(Model.Card))
 {
     <dl class="row">
-        <dt class="col-sm-3">@L["Buyer.Email.CardStatus"]</dt>
-        <dd class="col-sm-9">@Model.CardStatus</dd>
+        <dt class="col-sm-3">@L["Buyer.Email.Stage"]</dt>
+        <dd class="col-sm-9">@Model.Stage</dd>
         <dt class="col-sm-3">@L["Table.EmailStatus"]</dt>
         <dd class="col-sm-9">@Model.EmailStatus</dd>
-        <dt class="col-sm-3">@L["Table.BuyerStatus"]</dt>
-        <dd class="col-sm-9">@Model.BuyerStatus</dd>
+        <dt class="col-sm-3">@L["Table.ReviewStatus"]</dt>
+        <dd class="col-sm-9">@Model.ReviewStatus</dd>
         <dt class="col-sm-3">@L["Table.SupplierStatus"]</dt>
         <dd class="col-sm-9">@Model.SupplierStatus</dd>
     </dl>
@@ -31,7 +31,7 @@
         <p><strong>@L["Buyer.Email.BoundEmail"]</strong>@Model.EmailAccount.Email</p>
     }
 
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap actions-stack">
         @if (Model.Actions.HasFlag(BuyerMailAction.Authorize))
         {
             <a class="btn btn-primary" asp-page="/OAuth/Start" asp-route-provider="Gmail" asp-route-card="@Model.Card">@L["Action.AuthorizeGmail"]</a>

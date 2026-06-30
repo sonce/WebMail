@@ -43,10 +43,16 @@
   <data name="Table.CardNo" xml:space="preserve"><value>Card key</value></data>
   <data name="Table.EmailStatus" xml:space="preserve"><value>Email status</value></data>
   <data name="Table.BuyerStatus" xml:space="preserve"><value>Buyer status</value></data>
+  <data name="Table.Stage" xml:space="preserve"><value>Stage</value></data>
+  <data name="Table.ReviewStatus" xml:space="preserve"><value>Review</value></data>
+  <data name="Filter.AllStage" xml:space="preserve"><value>All stages</value></data>
+  <data name="Filter.AllReviewStatus" xml:space="preserve"><value>All review states</value></data>
+  <data name="Buyer.Email.Stage" xml:space="preserve"><value>Stage</value></data>
   <data name="Table.SupplierStatus" xml:space="preserve"><value>Supplier status</value></data>
   <data name="Table.SupplierProcessingStatus" xml:space="preserve"><value>Supplier processing status</value></data>
   <data name="Table.CreatedAt" xml:space="preserve"><value>Created at</value></data>
   <data name="Table.Operations" xml:space="preserve"><value>Actions</value></data>
+  <data name="Table.Select" xml:space="preserve"><value>Select</value></data>
   <data name="Table.UserName" xml:space="preserve"><value>Username</value></data>
   <data name="Table.DisplayName" xml:space="preserve"><value>Display name</value></data>
   <data name="Table.Status" xml:space="preserve"><value>Status</value></data>
@@ -137,6 +143,8 @@
   <data name="Admin.CardKeys.GenerateHeading" xml:space="preserve"><value>Generate Card Keys</value></data>
   <data name="Admin.CardKeys.Empty" xml:space="preserve"><value>No card keys yet.</value></data>
   <data name="CardKey.Generate" xml:space="preserve"><value>Generate</value></data>
+  <data name="CardKey.AutoApprove" xml:space="preserve"><value>Auto-approve</value></data>
+  <data name="Table.AutoApprove" xml:space="preserve"><value>Auto-approve</value></data>
   <data name="CardKey.Count" xml:space="preserve"><value>Count</value></data>
   <data name="CardKey.Sale" xml:space="preserve"><value>Sales</value></data>
   <data name="CardKey.SaleUnassigned" xml:space="preserve"><value>No sales assigned</value></data>
@@ -162,4 +170,23 @@
   <data name="CardKey.Sent" xml:space="preserve"><value>Sent {0} card(s).</value></data>
   <data name="CardKey.SendNoneSelected" xml:space="preserve"><value>Select at least one unsent card.</value></data>
   <data name="CardKey.SendNoSale" xml:space="preserve"><value>Select a sales person.</value></data>
+  <data name="Action.AddShipment" xml:space="preserve"><value>Add Shipment</value></data>
+  <data name="Shipment.SectionTitle" xml:space="preserve"><value>Shipments</value></data>
+  <data name="Shipment.Image" xml:space="preserve"><value>Image</value></data>
+  <data name="Shipment.Description" xml:space="preserve"><value>Description</value></data>
+  <data name="Shipment.No" xml:space="preserve"><value>Shipment No.</value></data>
+  <data name="Shipment.CreatedAt" xml:space="preserve"><value>Shipped At</value></data>
+  <data name="Shipment.Submit" xml:space="preserve"><value>Submit</value></data>
+  <data name="Shipment.Delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="Shipment.DeleteConfirm" xml:space="preserve"><value>Delete this shipment?</value></data>
+  <data name="Shipment.None" xml:space="preserve"><value>No shipments yet</value></data>
+  <data name="Shipment.Added" xml:space="preserve"><value>Shipment added</value></data>
+  <data name="Shipment.Deleted" xml:space="preserve"><value>Shipment deleted</value></data>
+  <data name="Shipment.InvalidImage" xml:space="preserve"><value>Invalid image (type or size)</value></data>
+  <data name="Table.Supplier" xml:space="preserve"><value>Supplier</value></data>
+  <data name="Action.Unassigned" xml:space="preserve"><value>Unassigned</value></data>
+  <data name="Common.Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Admin.Buyers.Assigned" xml:space="preserve"><value>Supplier assigned.</value></data>
+  <data name="Admin.Buyers.AssignFailed" xml:space="preserve"><value>Assignment failed.</value></data>
+  <data name="Action.AssignSupplier" xml:space="preserve"><value>Assign supplier</value></data>
 </root>

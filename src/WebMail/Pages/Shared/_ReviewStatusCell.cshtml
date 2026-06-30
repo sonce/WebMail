@@ -1,0 +1,4 @@
+@using WebMail.Domain
+@model Buyer
+
+<td data-label="@L["Table.ReviewStatus"]">@(Model.Stage == BuyerStage.Submitted ? Model.ReviewStatus.ToString() : "—")</td>

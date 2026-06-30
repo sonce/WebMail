@@ -15,12 +15,12 @@ public sealed class Buyer
 {
     public long Id { get; set; }
     public string CardNo { get; set; } = string.Empty;
-    public CardStatus CardStatus { get; set; } = CardStatus.Unused;
-    public CardSendStatus CardSendStatus { get; set; } = CardSendStatus.NotSent;
+    public BuyerStage Stage { get; set; } = BuyerStage.NotSent;
+    public bool AutoApprove { get; set; }
     public DateTimeOffset? CardSentAt { get; set; }
     public long? SaleId { get; set; }
     public EmailAuthorizationStatus EmailStatus { get; set; } = EmailAuthorizationStatus.NotAuthorized;
-    public BuyerStatus BuyerStatus { get; set; } = BuyerStatus.NotSubmitted;
+    public ReviewStatus ReviewStatus { get; set; } = ReviewStatus.Pending;
     public SupplierProcessingStatus SupplierStatus { get; set; } = SupplierProcessingStatus.Unprocessed;
     public bool IsDeleted { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
@@ -97,5 +97,17 @@ public sealed class AuditLog
     public string Action { get; set; } = string.Empty;
     public long? UserId { get; set; }
     public string? Details { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
+public sealed class Shipment
+{
+    public long Id { get; set; }
+    public long BuyerId { get; set; }
+    public long ShipmentNo { get; set; }
+    public string StoredFileName { get; set; } = string.Empty;
+    public string ContentType { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public long? CreatedByUserId { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

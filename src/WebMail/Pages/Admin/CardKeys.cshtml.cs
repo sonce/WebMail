@@ -9,6 +9,8 @@ using WebMail.Services;
 
 namespace WebMail.Pages.Admin;
 
+public enum CardKeyTab { NotSent = 1, Sent = 2 }
+
 [Authorize(Policy = "AdminOnly")]
 public class CardKeysModel : PageModel
 {
@@ -25,23 +27,25 @@ public class CardKeysModel : PageModel
     public IReadOnlyList<SaleOption> Sales { get; private set; } = Array.Empty<SaleOption>();
     public string? Message { get; private set; }
 
-    [BindProperty(SupportsGet = true)] public CardStatus? StatusFilter { get; set; }
+    [BindProperty(SupportsGet = true)] public BuyerStage? StageFilter { get; set; }
     [BindProperty(SupportsGet = true)] public long? SaleFilter { get; set; }
     [BindProperty(SupportsGet = true)] public string? CardNo { get; set; }
 
-    [BindProperty(SupportsGet = true)] public CardSendStatus Tab { get; set; } = CardSendStatus.NotSent;
+    [BindProperty(SupportsGet = true)] public CardKeyTab Tab { get; set; } = CardKeyTab.NotSent;
 
     [BindProperty] public long[] SelectedIds { get; set; } = Array.Empty<long>();
-    [BindProperty] public long SendSaleId { get; set; }
+    [BindProperty] public long? SendSaleId { get; set; }
+    [BindProperty] public bool SendAutoApprove { get; set; }
 
     [BindProperty] public int GenerateCount { get; set; } = 1;
     [BindProperty] public long? GenerateSaleId { get; set; }
+    [BindProperty] public bool GenerateAutoApprove { get; set; }
 
     public async Task OnGetAsync() => await LoadAsync();
 
     public async Task<IActionResult> OnPostGenerateAsync()
     {
-        Message = _loc[(await _cardKeys.GenerateAsync(GenerateCount, GenerateSaleId, AdminId())).Message];
+        Message = _loc[(await _cardKeys.GenerateAsync(GenerateCount, GenerateSaleId, GenerateAutoApprove, AdminId())).Message];
         await LoadAsync();
         return Page();
     }
@@ -55,7 +59,7 @@ public class CardKeysModel : PageModel
 
     public async Task<IActionResult> OnPostSendAsync()
     {
-        var result = await _cardKeys.SendAsync(SelectedIds, SendSaleId, AdminId());
+        var result = await _cardKeys.SendAsync(SelectedIds, SendSaleId, SendAutoApprove, AdminId());
         Message = result.Success
             ? _loc["CardKey.Sent", result.GeneratedCount]
             : _loc[result.Message];
@@ -65,7 +69,7 @@ public class CardKeysModel : PageModel
 
     private async Task LoadAsync()
     {
-        Cards = await _cardKeys.ListAsync(StatusFilter, SaleFilter, CardNo, Tab);
+        Cards = await _cardKeys.ListAsync(StageFilter, SaleFilter, CardNo, Tab == CardKeyTab.Sent);
         Sales = await _cardKeys.ListSalesAsync();
     }
 

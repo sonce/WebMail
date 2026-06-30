@@ -27,7 +27,7 @@ public sealed class BuyerPageModelTests
     public async Task BuyerEmailPageDoesNotLoadStoredMessages()
     {
         await using var db = CreateDb();
-        var buyer = new Buyer { CardNo = "card-2", BuyerStatus = BuyerStatus.Approved, EmailStatus = EmailAuthorizationStatus.Authorized };
+        var buyer = new Buyer { CardNo = "card-2", Stage = BuyerStage.Submitted, ReviewStatus = ReviewStatus.Approved, EmailStatus = EmailAuthorizationStatus.Authorized };
         db.Buyers.Add(buyer);
         await db.SaveChangesAsync();
         var account = new EmailAccount { BuyerId = buyer.Id, Email = "buyer@example.com", Provider = "Gmail", ProviderUserId = "provider-user", EncryptedRefreshToken = "token" };
@@ -47,7 +47,7 @@ public sealed class BuyerPageModelTests
     public async Task ChangeEmailClearsBindingAndResetsToFreshCycle()
     {
         await using var db = CreateDb();
-        var buyer = new Buyer { CardNo = "card-3", BuyerStatus = BuyerStatus.Approved, EmailStatus = EmailAuthorizationStatus.Authorized, SupplierStatus = SupplierProcessingStatus.Failed };
+        var buyer = new Buyer { CardNo = "card-3", Stage = BuyerStage.Submitted, ReviewStatus = ReviewStatus.Approved, EmailStatus = EmailAuthorizationStatus.Authorized, SupplierStatus = SupplierProcessingStatus.Failed };
         db.Buyers.Add(buyer);
         await db.SaveChangesAsync();
         var account = new EmailAccount { BuyerId = buyer.Id, Email = "buyer@example.com", Provider = "Gmail", ProviderUserId = "u", EncryptedRefreshToken = "token" };
@@ -61,7 +61,8 @@ public sealed class BuyerPageModelTests
 
         var reloaded = await db.Buyers.SingleAsync(x => x.Id == buyer.Id);
         Assert.Equal(EmailAuthorizationStatus.NotAuthorized, reloaded.EmailStatus);
-        Assert.Equal(BuyerStatus.NotSubmitted, reloaded.BuyerStatus);
+        Assert.Equal(BuyerStage.NotSubmitted, reloaded.Stage);
+        Assert.Equal(ReviewStatus.Pending, reloaded.ReviewStatus);
         Assert.Equal(SupplierProcessingStatus.Unprocessed, reloaded.SupplierStatus);
         Assert.Empty(await db.EmailAccounts.Where(x => x.BuyerId == buyer.Id).ToListAsync());
         Assert.Single(await db.EmailMessages.Where(x => x.BuyerId == buyer.Id).ToListAsync());
@@ -71,7 +72,7 @@ public sealed class BuyerPageModelTests
     public async Task ClearAuthFromCompletedIsTerminal()
     {
         await using var db = CreateDb();
-        var buyer = new Buyer { CardNo = "card-4", BuyerStatus = BuyerStatus.Approved, EmailStatus = EmailAuthorizationStatus.Authorized, SupplierStatus = SupplierProcessingStatus.Completed };
+        var buyer = new Buyer { CardNo = "card-4", Stage = BuyerStage.Submitted, ReviewStatus = ReviewStatus.Approved, EmailStatus = EmailAuthorizationStatus.Authorized, SupplierStatus = SupplierProcessingStatus.Completed };
         db.Buyers.Add(buyer);
         await db.SaveChangesAsync();
         db.EmailAccounts.Add(new EmailAccount { BuyerId = buyer.Id, Email = "buyer@example.com", Provider = "Gmail", ProviderUserId = "u", EncryptedRefreshToken = "token" });
@@ -82,7 +83,7 @@ public sealed class BuyerPageModelTests
 
         var reloaded = await db.Buyers.SingleAsync(x => x.Id == buyer.Id);
         Assert.Equal(EmailAuthorizationStatus.NotAuthorized, reloaded.EmailStatus);
-        Assert.Equal(BuyerStatus.Approved, reloaded.BuyerStatus);
+        Assert.Equal(ReviewStatus.Approved, reloaded.ReviewStatus);
         Assert.Equal(SupplierProcessingStatus.Completed, reloaded.SupplierStatus);
         Assert.Equal(BuyerMailAction.None, new BuyerRuleService().ResolveBuyerMailAction(reloaded));
     }
@@ -91,7 +92,7 @@ public sealed class BuyerPageModelTests
     public async Task ClearAuthBlockedWhileProcessing()
     {
         await using var db = CreateDb();
-        var buyer = new Buyer { CardNo = "card-5", BuyerStatus = BuyerStatus.Approved, EmailStatus = EmailAuthorizationStatus.Authorized, SupplierStatus = SupplierProcessingStatus.Unprocessed };
+        var buyer = new Buyer { CardNo = "card-5", Stage = BuyerStage.Submitted, ReviewStatus = ReviewStatus.Approved, EmailStatus = EmailAuthorizationStatus.Authorized, SupplierStatus = SupplierProcessingStatus.Unprocessed };
         db.Buyers.Add(buyer);
         await db.SaveChangesAsync();
         db.EmailAccounts.Add(new EmailAccount { BuyerId = buyer.Id, Email = "buyer@example.com", Provider = "Gmail", ProviderUserId = "u", EncryptedRefreshToken = "token" });

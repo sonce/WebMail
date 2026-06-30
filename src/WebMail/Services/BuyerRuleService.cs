@@ -20,11 +20,11 @@ public sealed class BuyerRuleService
         !buyer.IsDeleted
         && buyer.SaleId == salesUserId
         && buyer.EmailStatus != EmailAuthorizationStatus.Abnormal
-        && !(buyer.BuyerStatus == BuyerStatus.Approved && buyer.SupplierStatus == SupplierProcessingStatus.Unprocessed);
+        && !(buyer.ReviewStatus == ReviewStatus.Approved && buyer.SupplierStatus == SupplierProcessingStatus.Unprocessed);
 
     public bool CanSupplierViewBuyer(Buyer buyer, long? assignedSupplierId, long currentSupplierId) =>
         !buyer.IsDeleted
-        && buyer.BuyerStatus == BuyerStatus.Approved
+        && buyer.ReviewStatus == ReviewStatus.Approved
         && buyer.EmailStatus == EmailAuthorizationStatus.Authorized
         && assignedSupplierId == currentSupplierId;
 
@@ -40,16 +40,20 @@ public sealed class BuyerRuleService
             return BuyerMailAction.ReAuthorize | BuyerMailAction.ChangeEmail;
         }
 
-        return buyer.BuyerStatus switch
+        return buyer.Stage switch
         {
-            BuyerStatus.NotSubmitted => BuyerMailAction.Authorize,
-            BuyerStatus.PendingReview or BuyerStatus.Rejected => BuyerMailAction.ChangeEmail | BuyerMailAction.ClearAuth,
-            BuyerStatus.Approved => buyer.SupplierStatus switch
+            BuyerStage.NotSubmitted => BuyerMailAction.Authorize,
+            BuyerStage.Submitted => buyer.ReviewStatus switch
             {
-                SupplierProcessingStatus.Failed => BuyerMailAction.ChangeEmail,
-                SupplierProcessingStatus.Completed => buyer.EmailStatus == EmailAuthorizationStatus.Authorized
-                    ? BuyerMailAction.ClearAuth
-                    : BuyerMailAction.None,
+                ReviewStatus.Pending or ReviewStatus.Rejected => BuyerMailAction.ChangeEmail | BuyerMailAction.ClearAuth,
+                ReviewStatus.Approved => buyer.SupplierStatus switch
+                {
+                    SupplierProcessingStatus.Failed => BuyerMailAction.ChangeEmail,
+                    SupplierProcessingStatus.Completed => buyer.EmailStatus == EmailAuthorizationStatus.Authorized
+                        ? BuyerMailAction.ClearAuth
+                        : BuyerMailAction.None,
+                    _ => BuyerMailAction.None
+                },
                 _ => BuyerMailAction.None
             },
             _ => BuyerMailAction.None

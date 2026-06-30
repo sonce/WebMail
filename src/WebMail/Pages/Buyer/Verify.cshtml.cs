@@ -31,15 +31,15 @@ public class VerifyModel : PageModel
 
         var buyer = await _db.Buyers.FirstOrDefaultAsync(b => b.CardNo == card && !b.IsDeleted);
 
-        if (buyer is null || buyer.CardStatus == CardStatus.DeletedOrDisabled)
+        if (buyer is null)
         {
             ErrorMessage = _loc["Buyer.LinkInvalidOrExpired"];
             return Page();
         }
 
-        if (buyer.CardStatus == CardStatus.Unused)
+        if (buyer.Stage is BuyerStage.NotSent or BuyerStage.Sent)
         {
-            buyer.CardStatus = CardStatus.Entered;
+            buyer.Stage = BuyerStage.NotSubmitted;
         }
 
         await _db.SaveChangesAsync();

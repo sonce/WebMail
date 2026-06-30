@@ -43,7 +43,7 @@ public sealed class CardKeysModelTests
     public async Task DeleteHandlerSoftDeletesAndRemovesFromList()
     {
         await using var db = CreateDb();
-        db.Buyers.Add(new Buyer { Id = 1, CardNo = "c1", CardStatus = CardStatus.Unused });
+        db.Buyers.Add(new Buyer { Id = 1, CardNo = "c1", Stage = BuyerStage.NotSent });
         await db.SaveChangesAsync();
         var model = CreateModel(db);
 
@@ -59,7 +59,7 @@ public sealed class CardKeysModelTests
     {
         await using var db = CreateDb();
         db.Users.Add(new AppUser { Id = 5, UserName = "u5", DisplayName = "Alice", Role = UserRole.Sales });
-        db.Buyers.Add(new Buyer { Id = 1, CardNo = "c1", CardSendStatus = CardSendStatus.NotSent });
+        db.Buyers.Add(new Buyer { Id = 1, CardNo = "c1", Stage = BuyerStage.NotSent });
         await db.SaveChangesAsync();
         var model = CreateModel(db);
         model.SelectedIds = new[] { 1L };
@@ -68,7 +68,7 @@ public sealed class CardKeysModelTests
         await model.OnPostSendAsync();
 
         Assert.StartsWith("CardKey.Sent", model.Message);
-        Assert.Equal(CardSendStatus.Sent, (await db.Buyers.SingleAsync()).CardSendStatus);
+        Assert.Equal(BuyerStage.Sent, (await db.Buyers.SingleAsync()).Stage);
     }
 
     [Fact]

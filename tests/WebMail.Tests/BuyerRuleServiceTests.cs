@@ -11,74 +11,74 @@ public sealed class BuyerRuleServiceTests
     [Fact]
     public void SalesCannotDeleteOtherSalesBuyer()
     {
-        var buyer = new Buyer { SaleId = 10, BuyerStatus = BuyerStatus.PendingReview, EmailStatus = EmailAuthorizationStatus.Authorized };
+        var buyer = new Buyer { SaleId = 10, Stage = BuyerStage.Submitted, ReviewStatus = ReviewStatus.Pending, EmailStatus = EmailAuthorizationStatus.Authorized };
         Assert.False(_service.CanSalesDeleteBuyer(buyer, 99));
     }
 
     [Fact]
     public void SupplierCanSeeOnlyAssignedApprovedAuthorizedBuyer()
     {
-        var buyer = new Buyer { BuyerStatus = BuyerStatus.Approved, EmailStatus = EmailAuthorizationStatus.Authorized };
+        var buyer = new Buyer { Stage = BuyerStage.Submitted, ReviewStatus = ReviewStatus.Approved, EmailStatus = EmailAuthorizationStatus.Authorized };
         Assert.True(_service.CanSupplierViewBuyer(buyer, 7, 7));
     }
 
-    private static Buyer B(EmailAuthorizationStatus email, BuyerStatus buyer, SupplierProcessingStatus supplier = SupplierProcessingStatus.Unprocessed) =>
-        new() { EmailStatus = email, BuyerStatus = buyer, SupplierStatus = supplier };
+    private static Buyer B(EmailAuthorizationStatus email, BuyerStage stage, ReviewStatus review = ReviewStatus.Pending, SupplierProcessingStatus supplier = SupplierProcessingStatus.Unprocessed) =>
+        new() { EmailStatus = email, Stage = stage, ReviewStatus = review, SupplierStatus = supplier };
 
     [Fact]
     public void Action_NotSubmitted_AllowsAuthorize() =>
         Assert.Equal(BuyerMailAction.Authorize,
-            _service.ResolveBuyerMailAction(B(EmailAuthorizationStatus.NotAuthorized, BuyerStatus.NotSubmitted)));
+            _service.ResolveBuyerMailAction(B(EmailAuthorizationStatus.NotAuthorized, BuyerStage.NotSubmitted)));
 
     [Theory]
-    [InlineData(BuyerStatus.PendingReview)]
-    [InlineData(BuyerStatus.Rejected)]
-    public void Action_PreApproval_AllowsChangeAndClear(BuyerStatus status) =>
+    [InlineData(ReviewStatus.Pending)]
+    [InlineData(ReviewStatus.Rejected)]
+    public void Action_PreApproval_AllowsChangeAndClear(ReviewStatus review) =>
         Assert.Equal(BuyerMailAction.ChangeEmail | BuyerMailAction.ClearAuth,
-            _service.ResolveBuyerMailAction(B(EmailAuthorizationStatus.Authorized, status)));
+            _service.ResolveBuyerMailAction(B(EmailAuthorizationStatus.Authorized, BuyerStage.Submitted, review)));
 
     [Fact]
     public void Action_Abnormal_AllowsReauthAndChange() =>
         Assert.Equal(BuyerMailAction.ReAuthorize | BuyerMailAction.ChangeEmail,
-            _service.ResolveBuyerMailAction(B(EmailAuthorizationStatus.Abnormal, BuyerStatus.Approved, SupplierProcessingStatus.Failed)));
+            _service.ResolveBuyerMailAction(B(EmailAuthorizationStatus.Abnormal, BuyerStage.Submitted, ReviewStatus.Approved, SupplierProcessingStatus.Failed)));
 
     [Fact]
     public void Action_ApprovedUnprocessed_IsLocked() =>
         Assert.Equal(BuyerMailAction.None,
-            _service.ResolveBuyerMailAction(B(EmailAuthorizationStatus.Authorized, BuyerStatus.Approved, SupplierProcessingStatus.Unprocessed)));
+            _service.ResolveBuyerMailAction(B(EmailAuthorizationStatus.Authorized, BuyerStage.Submitted, ReviewStatus.Approved, SupplierProcessingStatus.Unprocessed)));
 
     [Fact]
     public void Action_ApprovedFailed_AllowsChangeEmail() =>
         Assert.Equal(BuyerMailAction.ChangeEmail,
-            _service.ResolveBuyerMailAction(B(EmailAuthorizationStatus.Authorized, BuyerStatus.Approved, SupplierProcessingStatus.Failed)));
+            _service.ResolveBuyerMailAction(B(EmailAuthorizationStatus.Authorized, BuyerStage.Submitted, ReviewStatus.Approved, SupplierProcessingStatus.Failed)));
 
     [Fact]
     public void Action_ApprovedCompleted_AllowsClearThenTerminal()
     {
         Assert.Equal(BuyerMailAction.ClearAuth,
-            _service.ResolveBuyerMailAction(B(EmailAuthorizationStatus.Authorized, BuyerStatus.Approved, SupplierProcessingStatus.Completed)));
+            _service.ResolveBuyerMailAction(B(EmailAuthorizationStatus.Authorized, BuyerStage.Submitted, ReviewStatus.Approved, SupplierProcessingStatus.Completed)));
         Assert.Equal(BuyerMailAction.None,
-            _service.ResolveBuyerMailAction(B(EmailAuthorizationStatus.NotAuthorized, BuyerStatus.Approved, SupplierProcessingStatus.Completed)));
+            _service.ResolveBuyerMailAction(B(EmailAuthorizationStatus.NotAuthorized, BuyerStage.Submitted, ReviewStatus.Approved, SupplierProcessingStatus.Completed)));
     }
 
     [Theory]
-    [InlineData(BuyerStatus.NotSubmitted, EmailAuthorizationStatus.NotAuthorized, SupplierProcessingStatus.Unprocessed, true)]
-    [InlineData(BuyerStatus.Approved, EmailAuthorizationStatus.Authorized, SupplierProcessingStatus.Failed, true)]
-    [InlineData(BuyerStatus.Approved, EmailAuthorizationStatus.Authorized, SupplierProcessingStatus.Completed, true)]
-    [InlineData(BuyerStatus.Approved, EmailAuthorizationStatus.Authorized, SupplierProcessingStatus.Unprocessed, false)]
-    [InlineData(BuyerStatus.PendingReview, EmailAuthorizationStatus.Abnormal, SupplierProcessingStatus.Unprocessed, false)]
-    public void SalesDelete_FollowsLifecycle(BuyerStatus bs, EmailAuthorizationStatus es, SupplierProcessingStatus ss, bool expected)
+    [InlineData(BuyerStage.NotSubmitted, ReviewStatus.Pending, EmailAuthorizationStatus.NotAuthorized, SupplierProcessingStatus.Unprocessed, true)]
+    [InlineData(BuyerStage.Submitted, ReviewStatus.Approved, EmailAuthorizationStatus.Authorized, SupplierProcessingStatus.Failed, true)]
+    [InlineData(BuyerStage.Submitted, ReviewStatus.Approved, EmailAuthorizationStatus.Authorized, SupplierProcessingStatus.Completed, true)]
+    [InlineData(BuyerStage.Submitted, ReviewStatus.Approved, EmailAuthorizationStatus.Authorized, SupplierProcessingStatus.Unprocessed, false)]
+    [InlineData(BuyerStage.Submitted, ReviewStatus.Pending, EmailAuthorizationStatus.Abnormal, SupplierProcessingStatus.Unprocessed, false)]
+    public void SalesDelete_FollowsLifecycle(BuyerStage stage, ReviewStatus review, EmailAuthorizationStatus es, SupplierProcessingStatus ss, bool expected)
     {
-        var buyer = new Buyer { SaleId = 5, BuyerStatus = bs, EmailStatus = es, SupplierStatus = ss };
+        var buyer = new Buyer { SaleId = 5, Stage = stage, ReviewStatus = review, EmailStatus = es, SupplierStatus = ss };
         Assert.Equal(expected, _service.CanSalesDeleteBuyer(buyer, 5));
     }
 
     [Fact]
     public void SupplierSetStatus_OnlyApprovedAuthorizedAssigned()
     {
-        var ok = new Buyer { BuyerStatus = BuyerStatus.Approved, EmailStatus = EmailAuthorizationStatus.Authorized };
+        var ok = new Buyer { Stage = BuyerStage.Submitted, ReviewStatus = ReviewStatus.Approved, EmailStatus = EmailAuthorizationStatus.Authorized };
         Assert.True(_service.CanSupplierSetStatus(ok, 3, 3));
-        var notApproved = new Buyer { BuyerStatus = BuyerStatus.PendingReview, EmailStatus = EmailAuthorizationStatus.Authorized };
+        var notApproved = new Buyer { Stage = BuyerStage.Submitted, ReviewStatus = ReviewStatus.Pending, EmailStatus = EmailAuthorizationStatus.Authorized };
         Assert.False(_service.CanSupplierSetStatus(notApproved, 3, 3));
     }
 }

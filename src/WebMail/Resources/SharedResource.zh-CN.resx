@@ -43,10 +43,16 @@
   <data name="Table.CardNo" xml:space="preserve"><value>卡密</value></data>
   <data name="Table.EmailStatus" xml:space="preserve"><value>邮箱状态</value></data>
   <data name="Table.BuyerStatus" xml:space="preserve"><value>买家状态</value></data>
+  <data name="Table.Stage" xml:space="preserve"><value>流程</value></data>
+  <data name="Table.ReviewStatus" xml:space="preserve"><value>审核</value></data>
+  <data name="Filter.AllStage" xml:space="preserve"><value>全部流程</value></data>
+  <data name="Filter.AllReviewStatus" xml:space="preserve"><value>全部审核状态</value></data>
+  <data name="Buyer.Email.Stage" xml:space="preserve"><value>流程</value></data>
   <data name="Table.SupplierStatus" xml:space="preserve"><value>供应商状态</value></data>
   <data name="Table.SupplierProcessingStatus" xml:space="preserve"><value>供应商处理状态</value></data>
   <data name="Table.CreatedAt" xml:space="preserve"><value>创建时间</value></data>
   <data name="Table.Operations" xml:space="preserve"><value>操作</value></data>
+  <data name="Table.Select" xml:space="preserve"><value>选择</value></data>
   <data name="Table.UserName" xml:space="preserve"><value>用户名</value></data>
   <data name="Table.DisplayName" xml:space="preserve"><value>显示名</value></data>
   <data name="Table.Status" xml:space="preserve"><value>状态</value></data>
@@ -137,6 +143,8 @@
   <data name="Admin.CardKeys.GenerateHeading" xml:space="preserve"><value>生成卡密</value></data>
   <data name="Admin.CardKeys.Empty" xml:space="preserve"><value>暂无卡密。</value></data>
   <data name="CardKey.Generate" xml:space="preserve"><value>生成</value></data>
+  <data name="CardKey.AutoApprove" xml:space="preserve"><value>免审核</value></data>
+  <data name="Table.AutoApprove" xml:space="preserve"><value>免审核</value></data>
   <data name="CardKey.Count" xml:space="preserve"><value>数量</value></data>
   <data name="CardKey.Sale" xml:space="preserve"><value>所属销售</value></data>
   <data name="CardKey.SaleUnassigned" xml:space="preserve"><value>不指定销售</value></data>
@@ -162,4 +170,23 @@
   <data name="CardKey.Sent" xml:space="preserve"><value>已发送 {0} 张。</value></data>
   <data name="CardKey.SendNoneSelected" xml:space="preserve"><value>请先勾选要发送的卡密。</value></data>
   <data name="CardKey.SendNoSale" xml:space="preserve"><value>请选择销售。</value></data>
+  <data name="Action.AddShipment" xml:space="preserve"><value>增加发货</value></data>
+  <data name="Shipment.SectionTitle" xml:space="preserve"><value>发货记录</value></data>
+  <data name="Shipment.Image" xml:space="preserve"><value>图片</value></data>
+  <data name="Shipment.Description" xml:space="preserve"><value>描述</value></data>
+  <data name="Shipment.No" xml:space="preserve"><value>发货单ID</value></data>
+  <data name="Shipment.CreatedAt" xml:space="preserve"><value>发货时间</value></data>
+  <data name="Shipment.Submit" xml:space="preserve"><value>提交发货</value></data>
+  <data name="Shipment.Delete" xml:space="preserve"><value>删除</value></data>
+  <data name="Shipment.DeleteConfirm" xml:space="preserve"><value>确定删除此发货记录？</value></data>
+  <data name="Shipment.None" xml:space="preserve"><value>暂无发货记录</value></data>
+  <data name="Shipment.Added" xml:space="preserve"><value>发货已添加</value></data>
+  <data name="Shipment.Deleted" xml:space="preserve"><value>发货已删除</value></data>
+  <data name="Shipment.InvalidImage" xml:space="preserve"><value>图片无效（类型或大小不符）</value></data>
+  <data name="Table.Supplier" xml:space="preserve"><value>供应商</value></data>
+  <data name="Action.Unassigned" xml:space="preserve"><value>未分配</value></data>
+  <data name="Common.Save" xml:space="preserve"><value>保存</value></data>
+  <data name="Admin.Buyers.Assigned" xml:space="preserve"><value>已分配供应商。</value></data>
+  <data name="Admin.Buyers.AssignFailed" xml:space="preserve"><value>分配失败。</value></data>
+  <data name="Action.AssignSupplier" xml:space="preserve"><value>分配供应商</value></data>
 </root>
