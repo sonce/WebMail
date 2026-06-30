@@ -43,6 +43,8 @@
 - `src/WebMail/Services/MailSyncPlanner.cs`
 - `tests/WebMail.Tests/MailSyncProcessorTests.cs`
 - `tests/WebMail.Tests/MailSyncJobQueueServiceTests.cs`
+- `tests/WebMail.Tests/MailSyncPlannerTests.cs`（主体 `MailSyncPlanner` 已删）
+- `tests/WebMail.Tests/EmailMessageTests.cs`（主体 `EmailMessage` 已删）
 
 ---
 
@@ -667,6 +669,25 @@ git rm tests/WebMail.Tests/MailSyncJobQueueServiceTests.cs
 ```
 <p><strong>@L["Supplier.Mail.WindowExpires"]</strong>@Model.ActiveWindowExpiresAt</p>
 ```
+
+- [ ] **Step 6b: 删除级联清理（计划补充）**
+
+删除 `EmailMessage`/`MailSyncPlanner` 等类型后，以下文件会编译断裂，必须一并处理（这些是计划初版遗漏的引用）：
+
+(a) `src/WebMail/Pages/Buyer/Email.cshtml.cs`：`EmailModel` 有一个永远为空的 `Messages` 属性引用了 `EmailMessage`。删除：
+- 第 33 行 `public IReadOnlyList<EmailMessage> Messages { get; private set; } = Array.Empty<EmailMessage>();`
+- 第 139 行 `Messages = Array.Empty<EmailMessage>();`（在 `Render` 方法内）
+（已确认 `Email.cshtml` 视图不引用 `Model.Messages`，删除属性安全。）
+
+(b) 删除两个测试文件（其测试主体已被删除）：
+```bash
+git rm tests/WebMail.Tests/MailSyncPlannerTests.cs
+git rm tests/WebMail.Tests/EmailMessageTests.cs
+```
+
+(c) `tests/WebMail.Tests/BuyerPageModelTests.cs`：
+- 删除整个测试 `BuyerEmailPageDoesNotLoadStoredMessages`（第 26-44 行）：它 seed 一条 `EmailMessage` 并断言 `Assert.Empty(page.Messages)`，而 `EmailModel.Messages` 属性已被 (a) 移除，断言不再成立；该测试意图（"买家邮件页不加载已存邮件"）在新设计下已无意义。
+- 在 `ChangeEmailClearsBindingAndResetsToFreshCycle` 中：删除第 56 行 `db.EmailMessages.Add(new EmailMessage {...});` 与第 68 行 `Assert.Single(await db.EmailMessages.Where(x => x.BuyerId == buyer.Id).ToListAsync());`。该测试其余断言（买家状态重置、账号已移除）保留有效。
 
 - [ ] **Step 7: 编译 + 全量测试**
 
