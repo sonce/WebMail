@@ -1,5 +1,10 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using System.Collections.Concurrent;
+using WebMail.Data;
 using WebMail.Domain;
 using WebMail.Services.EmailProviders;
+using WebMail.Services.Security;
 
 namespace WebMail.Services;
 
@@ -8,8 +13,91 @@ public sealed record MailCacheResult(
     bool Stale,
     string? Error);
 
-public sealed partial class MailCacheService
+public interface IMailCacheService
 {
+    Task<MailCacheResult> GetOrFetchAsync(long buyerId, bool force, CancellationToken cancellationToken);
+}
+
+public sealed partial class MailCacheService(
+    IServiceScopeFactory scopeFactory,
+    IEmailProviderResolver providers,
+    IConfiguration configuration,
+    ITokenProtector tokenProtector) : IMailCacheService
+{
+    private readonly ConcurrentDictionary<long, CacheEntry> _cache = new();
+
+    public async Task<MailCacheResult> GetOrFetchAsync(long buyerId, bool force, CancellationToken cancellationToken)
+    {
+        var ttlSeconds = configuration.GetValue("MailSync:CacheTtlSeconds", 30);
+        var now = DateTimeOffset.UtcNow;
+
+        if (!force && _cache.TryGetValue(buyerId, out var entry) && (now - entry.FetchedAt).TotalSeconds < ttlSeconds)
+        {
+            return new MailCacheResult(entry.Messages, Stale: false, Error: null);
+        }
+
+        try
+        {
+            var fetched = await FetchAsync(buyerId, cancellationToken);
+            var views = ProjectLatest(fetched);
+            _cache[buyerId] = new CacheEntry(views, now);
+            return new MailCacheResult(views, Stale: false, Error: null);
+        }
+        catch (AccountNotFoundException)
+        {
+            return new MailCacheResult(Array.Empty<MailMessageView>(), Stale: false, Error: "该买家未绑定邮箱账号");
+        }
+        catch (ProviderAuthorizationException)
+        {
+            await MarkBuyerAbnormalAsync(buyerId, cancellationToken);
+            return Degraded(buyerId, "邮件刷新失败，且无历史数据");
+        }
+        catch
+        {
+            return Degraded(buyerId, "邮件刷新失败，以下为上次结果");
+        }
+    }
+
+    private MailCacheResult Degraded(long buyerId, string emptyError)
+    {
+        if (_cache.TryGetValue(buyerId, out var stale) && stale.Messages.Count > 0)
+        {
+            return new MailCacheResult(stale.Messages, Stale: true, Error: "邮件刷新失败，以下为上次结果");
+        }
+        return new MailCacheResult(Array.Empty<MailMessageView>(), Stale: false, Error: emptyError);
+    }
+
+    private async Task<IReadOnlyList<ProviderMessage>> FetchAsync(long buyerId, CancellationToken cancellationToken)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<WebMailDbContext>();
+
+        var account = await db.EmailAccounts.FirstOrDefaultAsync(a => a.BuyerId == buyerId, cancellationToken);
+        if (account is null)
+        {
+            throw new AccountNotFoundException(buyerId);
+        }
+
+        var days = configuration.GetValue("MailSync:InitialSyncDays", 30);
+        var since = DateTimeOffset.UtcNow.AddDays(-days);
+        var refreshToken = tokenProtector.Unprotect(account.EncryptedRefreshToken);
+        var provider = providers.Resolve(account.Provider);
+        return await provider.FetchMessagesAsync(refreshToken, Array.Empty<string>(), since, cancellationToken);
+    }
+
+    private async Task MarkBuyerAbnormalAsync(long buyerId, CancellationToken cancellationToken)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<WebMailDbContext>();
+        var buyer = await db.Buyers.FirstOrDefaultAsync(b => b.Id == buyerId, cancellationToken);
+        if (buyer is not null && buyer.EmailStatus == EmailAuthorizationStatus.Authorized)
+        {
+            buyer.EmailStatus = EmailAuthorizationStatus.Abnormal;
+            db.AuditLogs.Add(new AuditLog { Action = "MailboxAbnormal", Details = $"buyer={buyerId}" });
+            await db.SaveChangesAsync(cancellationToken);
+        }
+    }
+
     internal static IReadOnlyList<MailMessageView> ProjectLatest(IReadOnlyList<ProviderMessage> messages, int limit = 10) =>
         messages
             .OrderByDescending(m => m.SentAt)
@@ -21,4 +109,8 @@ public sealed partial class MailCacheService
                 m.SentAt,
                 m.Folder))
             .ToList();
+
+    private sealed record CacheEntry(IReadOnlyList<MailMessageView> Messages, DateTimeOffset FetchedAt);
 }
+
+internal sealed class AccountNotFoundException(long buyerId) : Exception($"No email account for buyer {buyerId}.");
