@@ -114,7 +114,6 @@
   <data name="Supplier.StatusUpdated" xml:space="preserve"><value>已更新处理状态。</value></data>
   <data name="Supplier.StatusUpdateFailed" xml:space="preserve"><value>无法更新该买家的处理状态。</value></data>
   <data name="Supplier.Mail.Title" xml:space="preserve"><value>买家邮件</value></data>
-  <data name="Supplier.Mail.WindowExpires" xml:space="preserve"><value>同步窗口到期时间：</value></data>
   <data name="Mail.Junk" xml:space="preserve"><value>垃圾邮件</value></data>
   <data name="Buyer.Verify.Title" xml:space="preserve"><value>验证卡密</value></data>
   <data name="Buyer.LinkInvalid" xml:space="preserve"><value>链接无效</value></data>

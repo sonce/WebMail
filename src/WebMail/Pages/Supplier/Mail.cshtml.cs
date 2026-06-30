@@ -58,7 +58,7 @@ public class MailModel : PageModel
 
         BuyerId = buyerId;
 
-        var cached = await _cache.GetOrFetchAsync(buyerId, force: false, CancellationToken.None);
+        var cached = await _cache.GetOrFetchAsync(buyerId, force: false, HttpContext.RequestAborted);
         Messages = cached.Messages;
 
         Shipments = await _shipments.GetForBuyerAsync(buyerId);
@@ -82,7 +82,7 @@ public class MailModel : PageModel
             return Forbid();
         }
 
-        var cached = await _cache.GetOrFetchAsync(buyerId, force, CancellationToken.None);
+        var cached = await _cache.GetOrFetchAsync(buyerId, force, HttpContext.RequestAborted);
         return new JsonResult(new MailPollResponse(cached.Messages, cached.Stale, cached.Error));
     }
 

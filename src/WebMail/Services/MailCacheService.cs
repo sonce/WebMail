@@ -52,6 +52,10 @@ public sealed partial class MailCacheService(
             await MarkBuyerAbnormalAsync(buyerId, cancellationToken);
             return Degraded(buyerId, "邮件刷新失败，且无历史数据");
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch
         {
             return Degraded(buyerId, "邮件刷新失败，以下为上次结果");

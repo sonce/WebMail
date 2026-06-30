@@ -114,7 +114,6 @@
   <data name="Supplier.StatusUpdated" xml:space="preserve"><value>Processing status updated.</value></data>
   <data name="Supplier.StatusUpdateFailed" xml:space="preserve"><value>Cannot update this buyer's processing status.</value></data>
   <data name="Supplier.Mail.Title" xml:space="preserve"><value>Buyer mail</value></data>
-  <data name="Supplier.Mail.WindowExpires" xml:space="preserve"><value>Sync window expires at:</value></data>
   <data name="Mail.Junk" xml:space="preserve"><value>Junk</value></data>
   <data name="Buyer.Verify.Title" xml:space="preserve"><value>Verify card key</value></data>
   <data name="Buyer.LinkInvalid" xml:space="preserve"><value>Invalid link</value></data>

@@ -79,6 +79,10 @@
         var noMailText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Common.NoMail"].Value));
         var junkText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Mail.Junk"].Value));
         var refreshFailedText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Mail.RefreshFailed"].Value));
+        var sourceText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Table.Source"].Value));
+        var senderText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Table.Sender"].Value));
+        var subjectText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Table.Subject"].Value));
+        var sentAtText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Table.SentAt"].Value));
         var pollUrl = '?handler=poll&buyerId=' + buyerId;
         var timer = null;
 
@@ -102,15 +106,15 @@
             var rows = msgs.map(function (m) {
                 var source = m.folder === 2 ? '<span class="badge bg-warning text-dark">' + junkText + '</span>' : '';
                 return '<tr>'
-                    + '<td data-label="Source">' + source + '</td>'
-                    + '<td data-label="Sender">' + escapeHtml(m.sender) + '</td>'
-                    + '<td data-label="Subject">' + escapeHtml(m.subject) + '</td>'
-                    + '<td data-label="SentAt">' + escapeHtml(m.sentAt) + '</td>'
+                    + '<td data-label="' + sourceText + '">' + source + '</td>'
+                    + '<td data-label="' + senderText + '">' + escapeHtml(m.sender) + '</td>'
+                    + '<td data-label="' + subjectText + '">' + escapeHtml(m.subject) + '</td>'
+                    + '<td data-label="' + sentAtText + '">' + escapeHtml(m.sentAt) + '</td>'
                     + '</tr>';
             }).join('');
 
             content.innerHTML = '<div class="table-responsive"><table class="table table-striped table-cards">'
-                + '<thead><tr><th>Source</th><th>Sender</th><th>Subject</th><th>SentAt</th></tr></thead>'
+                + '<thead><tr><th>' + sourceText + '</th><th>' + senderText + '</th><th>' + subjectText + '</th><th>' + sentAtText + '</th></tr></thead>'
                 + '<tbody>' + rows + '</tbody></table></div>';
         }
 

@@ -33,7 +33,6 @@ public sealed class BuyerPageModelTests
         var account = new EmailAccount { BuyerId = buyer.Id, Email = "buyer@example.com", Provider = "Gmail", ProviderUserId = "u", EncryptedRefreshToken = "token" };
         db.EmailAccounts.Add(account);
         await db.SaveChangesAsync();
-        await db.SaveChangesAsync();
 
         var page = new EmailModel(db, new BuyerRuleService(), TestLocalizer.Shared);
         await page.OnPostChangeEmailAsync("card-3");

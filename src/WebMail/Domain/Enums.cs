@@ -5,5 +5,4 @@ public enum EmailAuthorizationStatus { NotAuthorized = 1, Authorized = 2, Abnorm
 public enum BuyerStage { NotSent = 1, Sent = 2, NotSubmitted = 3, Submitted = 4 }
 public enum ReviewStatus { Pending = 1, Approved = 2, Rejected = 3 }
 public enum SupplierProcessingStatus { Unprocessed = 1, Failed = 2, Completed = 3 }
-public enum SyncJobStatus { Pending = 1, Running = 2, Succeeded = 3, Failed = 4 }
 public enum MailFolder { Inbox = 1, Junk = 2 }
