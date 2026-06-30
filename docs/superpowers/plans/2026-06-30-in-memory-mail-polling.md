@@ -693,7 +693,7 @@ git commit -m "refactor(mail): drop DB sync pipeline, register MailCacheService"
 
 **Interfaces:**
 - Consumes: `IMailCacheService.GetOrFetchAsync(long buyerId, bool force, CancellationToken)` → `MailCacheResult`
-- Produces: `MailModel.OnGetPoll(long buyerId, bool force)` → `IActionResult`（`JsonResult` 或 `ForbidResult`）；`MailModel` 构造签名变为 `MailModel(WebMailDbContext db, ShipmentService shipments, IMailCacheService cache, IStringLocalizer<SharedResource> loc)`。
+- Produces: `MailModel.OnGetPoll(long buyerId, bool force)` → `IActionResult`（`JsonResult` 或 `ForbidResult`）；`MailModel` 构造签名变为 `MailModel(WebMailDbContext db, ShipmentService shipments, IMailCacheService cache, IStringLocalizer<SharedResource> loc)`；在 `Mail.cshtml.cs` 底部定义 `public sealed record MailPollResponse(IReadOnlyList<MailMessageView> Messages, bool Stale, string? Error);`（`OnGetPoll` 返回 `new JsonResult(new MailPollResponse(...))`，使测试可 `Assert.IsType<MailPollResponse>`）。
 
 - [ ] **Step 1: 写失败测试（OnGetPoll）**
 
@@ -731,7 +731,7 @@ git commit -m "refactor(mail): drop DB sync pipeline, register MailCacheService"
         var result = await model.OnGetPoll(buyerId: 50, force: false);
 
         var json = Assert.IsType<JsonResult>(result);
-        var payload = Assert.IsType<PollPayload>(json.Value);
+        var payload = Assert.IsType<MailPollResponse>(json.Value);
         Assert.Single(payload.Messages);
         Assert.False(payload.Stale);
     }
@@ -755,13 +755,6 @@ git commit -m "refactor(mail): drop DB sync pipeline, register MailCacheService"
         public StubCache(IReadOnlyList<MailMessageView> messages) =>
             _result = new MailCacheResult(messages, Stale: false, Error: null);
         public Task<MailCacheResult> GetOrFetchAsync(long buyerId, bool force, CancellationToken ct) => Task.FromResult(_result);
-    }
-
-    public sealed class PollPayload
-    {
-        public IReadOnlyList<MailMessageView> Messages { get; set; } = Array.Empty<MailMessageView>();
-        public bool Stale { get; set; }
-        public string? Error { get; set; }
     }
 ```
 
@@ -804,13 +797,12 @@ Expected: FAIL — `MailModel` 构造不匹配 / `OnGetPoll` 不存在。
           }
 
           var cached = await _cache.GetOrFetchAsync(buyerId, force, CancellationToken.None);
-          return new JsonResult(new
-          {
-              messages = cached.Messages,
-              stale = cached.Stale,
-              error = cached.Error
-          });
+          return new JsonResult(new MailPollResponse(cached.Messages, cached.Stale, cached.Error));
       }
+  ```
+- 在 `Mail.cshtml.cs` 文件底部（命名空间内）追加：
+  ```csharp
+  public sealed record MailPollResponse(IReadOnlyList<MailMessageView> Messages, bool Stale, string? Error);
   ```
 - 顶部 using 增补 `using WebMail.Services;`（若已存在跳过）。
 
