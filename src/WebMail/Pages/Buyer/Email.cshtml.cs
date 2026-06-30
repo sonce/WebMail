@@ -30,7 +30,6 @@ public class EmailModel : PageModel
     public SupplierProcessingStatus SupplierStatus { get; private set; }
     public BuyerMailAction Actions { get; private set; }
     public EmailAccount? EmailAccount { get; private set; }
-    public IReadOnlyList<EmailMessage> Messages { get; private set; } = Array.Empty<EmailMessage>();
 
     public async Task<IActionResult> OnGetAsync(string card)
     {
@@ -136,7 +135,6 @@ public class EmailModel : PageModel
         SupplierStatus = buyer.SupplierStatus;
         Actions = _ruleService.ResolveBuyerMailAction(buyer);
         EmailAccount = account;
-        Messages = Array.Empty<EmailMessage>();
         return Page();
     }
 }

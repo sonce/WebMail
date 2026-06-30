@@ -8,7 +8,6 @@ using WebMail.Data;
 using WebMail.Domain;
 using WebMail.Services;
 using WebMail.Services.Auth;
-using WebMail.Services.Background;
 using WebMail.Services.EmailProviders;
 using WebMail.Services.Localization;
 using WebMail.Services.Security;
@@ -39,12 +38,12 @@ builder.Services.AddScoped<ShipmentService>(sp =>
     var root = Path.IsPathRooted(rel) ? rel : Path.Combine(env.ContentRootPath, rel);
     return new ShipmentService(db, snowflake, root);
 });
-builder.Services.AddSingleton<MailSyncPlanner>();
 builder.Services.AddHttpClient<GmailProvider>();
 builder.Services.AddScoped<IEmailProvider>(sp => sp.GetRequiredService<GmailProvider>());
 builder.Services.AddHttpClient<OutlookProvider>();
 builder.Services.AddScoped<IEmailProvider>(provider => provider.GetRequiredService<OutlookProvider>());
 builder.Services.AddScoped<IEmailProviderResolver, EmailProviderResolver>();
+builder.Services.AddSingleton<IMailCacheService, MailCacheService>();
 var dataProtection = builder.Services.AddDataProtection();
 var dpKeysPath = builder.Configuration["DataProtection:KeysPath"];
 if (!string.IsNullOrWhiteSpace(dpKeysPath))
@@ -62,9 +61,6 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITokenProtector, DataProtectionTokenProtector>();
 builder.Services.AddScoped<IOAuthStateStore, CookieOAuthStateStore>();
-builder.Services.AddSingleton<MailSyncJobQueueService>();
-builder.Services.AddScoped<MailSyncProcessor>();
-builder.Services.AddHostedService<MailSyncBackgroundService>();
 builder.Services.AddSingleton<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
 {

@@ -37,9 +37,8 @@ public class MailModel : PageModel
         && b.EmailStatus == EmailAuthorizationStatus.Authorized);
 
     public long BuyerId { get; private set; }
-    public IReadOnlyList<EmailMessage> Messages { get; private set; } = Array.Empty<EmailMessage>();
+    public IReadOnlyList<Domain.MailMessageView> Messages { get; private set; } = Array.Empty<Domain.MailMessageView>();
     public IReadOnlyList<Shipment> Shipments { get; private set; } = Array.Empty<Shipment>();
-    public DateTimeOffset ActiveWindowExpiresAt { get; private set; }
     public string? Message { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(long buyerId, string? msg = null)
@@ -57,30 +56,9 @@ public class MailModel : PageModel
 
         BuyerId = buyerId;
 
-        var account = await _db.EmailAccounts.FirstOrDefaultAsync(a => a.BuyerId == buyerId);
-        if (account is not null)
-        {
-            Messages = await _db.EmailMessages
-                .Where(m => m.EmailAccountId == account.Id)
-                .OrderByDescending(m => m.SentAt)
-                .ToListAsync();
-        }
+        Messages = Array.Empty<Domain.MailMessageView>();
 
         Shipments = await _shipments.GetForBuyerAsync(buyerId);
-
-        var expiresAt = DateTimeOffset.UtcNow.AddMinutes(30);
-        var window = await _db.ActiveSyncWindows.FirstOrDefaultAsync(w => w.BuyerId == buyerId);
-        if (window is null)
-        {
-            _db.ActiveSyncWindows.Add(new ActiveSyncWindow { BuyerId = buyerId, ExpiresAt = expiresAt });
-        }
-        else
-        {
-            window.ExpiresAt = expiresAt;
-        }
-
-        await _db.SaveChangesAsync();
-        ActiveWindowExpiresAt = expiresAt;
 
         if (msg is not null && KnownMessageKeys.Contains(msg))
         {

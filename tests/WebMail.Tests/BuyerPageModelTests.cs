@@ -24,26 +24,6 @@ public sealed class BuyerPageModelTests
     }
 
     [Fact]
-    public async Task BuyerEmailPageDoesNotLoadStoredMessages()
-    {
-        await using var db = CreateDb();
-        var buyer = new Buyer { CardNo = "card-2", Stage = BuyerStage.Submitted, ReviewStatus = ReviewStatus.Approved, EmailStatus = EmailAuthorizationStatus.Authorized };
-        db.Buyers.Add(buyer);
-        await db.SaveChangesAsync();
-        var account = new EmailAccount { BuyerId = buyer.Id, Email = "buyer@example.com", Provider = "Gmail", ProviderUserId = "provider-user", EncryptedRefreshToken = "token" };
-        db.EmailAccounts.Add(account);
-        await db.SaveChangesAsync();
-        db.EmailMessages.Add(new EmailMessage { BuyerId = buyer.Id, EmailAccountId = account.Id, ProviderMessageId = "m-1", Sender = "sender@example.com", Subject = "private", SentAt = DateTimeOffset.UtcNow });
-        await db.SaveChangesAsync();
-
-        var page = new EmailModel(db, new BuyerRuleService(), TestLocalizer.Shared);
-
-        await page.OnGetAsync("card-2");
-
-        Assert.Empty(page.Messages);
-    }
-
-    [Fact]
     public async Task ChangeEmailClearsBindingAndResetsToFreshCycle()
     {
         await using var db = CreateDb();
@@ -53,7 +33,6 @@ public sealed class BuyerPageModelTests
         var account = new EmailAccount { BuyerId = buyer.Id, Email = "buyer@example.com", Provider = "Gmail", ProviderUserId = "u", EncryptedRefreshToken = "token" };
         db.EmailAccounts.Add(account);
         await db.SaveChangesAsync();
-        db.EmailMessages.Add(new EmailMessage { BuyerId = buyer.Id, EmailAccountId = account.Id, ProviderMessageId = "m-1", Sender = "s@example.com", Subject = "audit", SentAt = DateTimeOffset.UtcNow });
         await db.SaveChangesAsync();
 
         var page = new EmailModel(db, new BuyerRuleService(), TestLocalizer.Shared);
@@ -65,7 +44,6 @@ public sealed class BuyerPageModelTests
         Assert.Equal(ReviewStatus.Pending, reloaded.ReviewStatus);
         Assert.Equal(SupplierProcessingStatus.Unprocessed, reloaded.SupplierStatus);
         Assert.Empty(await db.EmailAccounts.Where(x => x.BuyerId == buyer.Id).ToListAsync());
-        Assert.Single(await db.EmailMessages.Where(x => x.BuyerId == buyer.Id).ToListAsync());
     }
 
     [Fact]
