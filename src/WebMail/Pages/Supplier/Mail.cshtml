@@ -8,6 +8,13 @@
 <h1 class="display-6">@L["Supplier.Mail.Title"]</h1>
 
 <p>
+    <label class="me-3">
+        <input type="checkbox" id="autoPollToggle" checked /> @L["Mail.AutoPoll"]
+    </label>
+    <button type="button" class="btn btn-secondary btn-sm" id="refreshBtn">@L["Mail.Refresh"]</button>
+</p>
+
+<p>
     @if (User.IsInRole("Administrator"))
     {
         <a class="btn btn-secondary btn-sm" asp-page="/Admin/Buyers">@L["Common.BackToList"]</a>
@@ -23,40 +30,117 @@
     <div class="alert alert-info">@Model.Message</div>
 }
 
-@if (Model.Messages.Count == 0)
-{
-    <p>@L["Common.NoMail"]</p>
-}
-else
-{
-    <div class="table-responsive">
-    <table class="table table-striped table-cards">
-        <thead>
-            <tr>
-                <th>@L["Table.Source"]</th>
-                <th>@L["Table.Sender"]</th>
-                <th>@L["Table.Subject"]</th>
-                <th>@L["Table.SentAt"]</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var message in Model.Messages)
-            {
+<div id="mailAlert" class="alert alert-warning d-none"></div>
+
+<div id="mailContent">
+    @if (Model.Messages.Count == 0)
+    {
+        <p>@L["Common.NoMail"]</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+        <table class="table table-striped table-cards">
+            <thead>
                 <tr>
-                    <td data-label="@L["Table.Source"]">
-                        @if (message.Folder == MailFolder.Junk)
-                        {
-                            <span class="badge bg-warning text-dark">@L["Mail.Junk"]</span>
-                        }
-                    </td>
-                    <td data-label="@L["Table.Sender"]">@message.Sender</td>
-                    <td data-label="@L["Table.Subject"]">@message.Subject</td>
-                    <td data-label="@L["Table.SentAt"]">@message.SentAt</td>
+                    <th>@L["Table.Source"]</th>
+                    <th>@L["Table.Sender"]</th>
+                    <th>@L["Table.Subject"]</th>
+                    <th>@L["Table.SentAt"]</th>
                 </tr>
-            }
-        </tbody>
-    </table>
-    </div>
-}
+            </thead>
+            <tbody id="mailBody">
+                @foreach (var message in Model.Messages)
+                {
+                    <tr>
+                        <td data-label="@L["Table.Source"]">
+                            @if (message.Folder == MailFolder.Junk)
+                            {
+                                <span class="badge bg-warning text-dark">@L["Mail.Junk"]</span>
+                            }
+                        </td>
+                        <td data-label="@L["Table.Sender"]">@message.Sender</td>
+                        <td data-label="@L["Table.Subject"]">@message.Subject</td>
+                        <td data-label="@L["Table.SentAt"]">@message.SentAt</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        </div>
+    }
+</div>
 
 <partial name="_ShipmentSection" model="Model" />
+
+@section Scripts {
+<script>
+    (function () {
+        var buyerId = @Model.BuyerId;
+        var noMailText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Common.NoMail"].Value));
+        var junkText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Mail.Junk"].Value));
+        var refreshFailedText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Mail.RefreshFailed"].Value));
+        var pollUrl = '?handler=poll&buyerId=' + buyerId;
+        var timer = null;
+
+        function render(data) {
+            var body = document.getElementById('mailBody');
+            var content = document.getElementById('mailContent');
+            var alert = document.getElementById('mailAlert');
+            var msgs = data.messages || [];
+
+            if (data.stale || data.error) {
+                alert.textContent = refreshFailedText;
+                alert.classList.remove('d-none');
+            } else {
+                alert.classList.add('d-none');
+            }
+
+            if (msgs.length === 0) {
+                content.innerHTML = '<p>' + noMailText + '</p>';
+                return;
+            }
+
+            var rows = msgs.map(function (m) {
+                var source = m.folder === 2 ? '<span class="badge bg-warning text-dark">' + junkText + '</span>' : '';
+                return '<tr>'
+                    + '<td data-label="Source">' + source + '</td>'
+                    + '<td data-label="Sender">' + escapeHtml(m.sender) + '</td>'
+                    + '<td data-label="Subject">' + escapeHtml(m.subject) + '</td>'
+                    + '<td data-label="SentAt">' + escapeHtml(m.sentAt) + '</td>'
+                    + '</tr>';
+            }).join('');
+
+            content.innerHTML = '<div class="table-responsive"><table class="table table-striped table-cards">'
+                + '<thead><tr><th>Source</th><th>Sender</th><th>Subject</th><th>SentAt</th></tr></thead>'
+                + '<tbody>' + rows + '</tbody></table></div>';
+        }
+
+        function escapeHtml(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
+        function fetchMail(force) {
+            $.getJSON(pollUrl + (force ? '&force=1' : ''))
+                .done(render)
+                .fail(function () {
+                    var alert = document.getElementById('mailAlert');
+                    alert.textContent = refreshFailedText;
+                    alert.classList.remove('d-none');
+                });
+        }
+
+        function startTimer() { stopTimer(); timer = setInterval(function () { fetchMail(false); }, 15000); }
+        function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
+
+        document.getElementById('refreshBtn').addEventListener('click', function () { fetchMail(true); });
+        document.getElementById('autoPollToggle').addEventListener('change', function () {
+            if (this.checked) { startTimer(); } else { stopTimer(); }
+        });
+        window.addEventListener('beforeunload', stopTimer);
+
+        if (document.getElementById('autoPollToggle').checked) { startTimer(); }
+    })();
+</script>
+}

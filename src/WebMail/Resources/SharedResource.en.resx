@@ -189,4 +189,7 @@
   <data name="Admin.Buyers.Assigned" xml:space="preserve"><value>Supplier assigned.</value></data>
   <data name="Admin.Buyers.AssignFailed" xml:space="preserve"><value>Assignment failed.</value></data>
   <data name="Action.AssignSupplier" xml:space="preserve"><value>Assign supplier</value></data>
+  <data name="Mail.AutoPoll" xml:space="preserve"><value>Auto-refresh</value></data>
+  <data name="Mail.Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Mail.RefreshFailed" xml:space="preserve"><value>Mail refresh failed. Showing previous results.</value></data>
 </root>
