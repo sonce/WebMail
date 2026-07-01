@@ -24,8 +24,7 @@ body {
 /* ===== Card-key cell: fixed width, truncated, with copy icon ===== */
 .cardno-cell {
   display: flex;
-  align-items: center;
-  gap: .25rem;
+  align-items: center;  gap: .25rem;
 }
 
 .cardno-cell .cardno-text {
@@ -44,6 +43,12 @@ body {
 
 .cardno-cell .copy-link.copied {
   color: #198754;
+}
+
+/* Mail subject cell: long subjects wrap instead of stretching the column */
+.td-subject {
+  word-break: break-word;
+  min-width: 12rem;
 }
 
 /* ===== Responsive card-style tables (mobile only) ===== */
@@ -111,6 +116,17 @@ body {
   }
 
   .table-cards td.td-wide::before {
+    margin-bottom: .25rem;
+  }
+
+  /* Long subjects wrap onto their own line in the card layout */
+  .table-cards td.td-subject {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+  }
+
+  .table-cards td.td-subject::before {
     margin-bottom: .25rem;
   }
 

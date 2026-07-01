@@ -81,7 +81,7 @@
                 return '<tr>'
                     + '<td data-label="' + sourceText + '">' + source + '</td>'
                     + '<td data-label="' + senderText + '" data-filter="' + escapeAttr(m.sender) + '">' + senderLink(m.sender) + '</td>'
-                    + '<td data-label="' + subjectText + '">' + escapeHtml(m.subject) + '</td>'
+                    + '<td class="td-subject" data-label="' + subjectText + '">' + escapeHtml(m.subject) + '</td>'
                     + '<td data-label="' + sentAtText + '">' + formatSentAt(m.sentAt) + '</td>'
                     + '</tr>';
             }).join('');
