@@ -192,4 +192,5 @@
   <data name="Mail.Refresh" xml:space="preserve"><value>Refresh</value></data>
   <data name="Mail.RefreshFailed" xml:space="preserve"><value>Mail refresh failed. Showing previous results.</value></data>
   <data name="Mail.Loading" xml:space="preserve"><value>Loading mail…</value></data>
+  <data name="Mail.FilterPlaceholder" xml:space="preserve"><value>Filter sender/subject…</value></data>
 </root>
