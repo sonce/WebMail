@@ -57,7 +57,7 @@
   <data name="Table.DisplayName" xml:space="preserve"><value>显示名</value></data>
   <data name="Table.Status" xml:space="preserve"><value>状态</value></data>
   <data name="Table.LinkedBuyers" xml:space="preserve"><value>关联买家数</value></data>
-  <data name="Table.Source" xml:space="preserve"><value>来源</value></data>
+  <data name="Table.Type" xml:space="preserve"><value>类型</value></data>
   <data name="Table.Sender" xml:space="preserve"><value>发件人</value></data>
   <data name="Table.Subject" xml:space="preserve"><value>主题</value></data>
   <data name="Table.SentAt" xml:space="preserve"><value>发送时间</value></data>

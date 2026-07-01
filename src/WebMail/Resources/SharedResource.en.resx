@@ -57,7 +57,7 @@
   <data name="Table.DisplayName" xml:space="preserve"><value>Display name</value></data>
   <data name="Table.Status" xml:space="preserve"><value>Status</value></data>
   <data name="Table.LinkedBuyers" xml:space="preserve"><value>Linked buyers</value></data>
-  <data name="Table.Source" xml:space="preserve"><value>Source</value></data>
+  <data name="Table.Type" xml:space="preserve"><value>Type</value></data>
   <data name="Table.Sender" xml:space="preserve"><value>Sender</value></data>
   <data name="Table.Subject" xml:space="preserve"><value>Subject</value></data>
   <data name="Table.SentAt" xml:space="preserve"><value>Sent at</value></data>
