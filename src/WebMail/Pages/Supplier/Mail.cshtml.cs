@@ -58,9 +58,8 @@ public class MailModel : PageModel
 
         BuyerId = buyerId;
 
-        var cached = await _cache.GetOrFetchAsync(buyerId, force: false, HttpContext.RequestAborted);
-        Messages = cached.Messages;
-
+        // Mail is fetched asynchronously by the page's AJAX polling (OnGetPoll) after
+        // render, so the page loads instantly instead of blocking on a Gmail fetch.
         Shipments = await _shipments.GetForBuyerAsync(buyerId);
 
         if (msg is not null && KnownMessageKeys.Contains(msg))

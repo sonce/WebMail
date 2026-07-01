@@ -147,6 +147,24 @@ public sealed class SupplierMailModelTests : IDisposable
     }
 
     [Fact]
+    public async Task OnGetDoesNotInvokeCacheSoPageRendersWithoutBlockingFetch()
+    {
+        // OnGet must render instantly; the Gmail fetch happens asynchronously via
+        // the OnGetPoll AJAX endpoint, not during the page request.
+        await using var db = CreateDb();
+        db.Buyers.Add(SeedApprovedBuyer(db, 52));
+        await db.SaveChangesAsync();
+        var cache = new SpyCache();
+        var model = CreateModel(db, userId: 1, role: "Administrator", cache);
+
+        var result = await model.OnGetAsync(buyerId: 52);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Equal(0, cache.CallCount);
+        Assert.Empty(model.Messages);
+    }
+
+    [Fact]
     public async Task OnGetPollReturnsJsonMessagesForAdmin()
     {
         await using var db = CreateDb();
@@ -178,5 +196,15 @@ public sealed class SupplierMailModelTests : IDisposable
         var result = await model.OnGetPoll(buyerId: 51, force: false);
 
         Assert.IsType<ForbidResult>(result);
+    }
+
+    private sealed class SpyCache : IMailCacheService
+    {
+        public int CallCount { get; private set; }
+        public Task<MailCacheResult> GetOrFetchAsync(long buyerId, bool force, CancellationToken ct)
+        {
+            CallCount++;
+            return Task.FromResult(new MailCacheResult(Array.Empty<MailMessageView>(), Stale: false, Error: null));
+        }
     }
 }

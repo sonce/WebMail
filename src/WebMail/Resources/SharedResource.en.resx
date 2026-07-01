@@ -191,4 +191,5 @@
   <data name="Mail.AutoPoll" xml:space="preserve"><value>Auto-refresh</value></data>
   <data name="Mail.Refresh" xml:space="preserve"><value>Refresh</value></data>
   <data name="Mail.RefreshFailed" xml:space="preserve"><value>Mail refresh failed. Showing previous results.</value></data>
+  <data name="Mail.Loading" xml:space="preserve"><value>Loading mail…</value></data>
 </root>
