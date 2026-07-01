@@ -137,9 +137,9 @@
                     i++;
                 }
                 if (digits.length >= 5) {
-                    out += '<span class="mail-num-badge">'
+                    out += '<span class="mail-num-badge" data-copy="' + escapeAttr(digits) + '" title="' + copyHintText + '" role="button" tabindex="0">'
                         + '<span class="mail-num-text">' + escapeHtml(digits) + '</span>'
-                        + '<span class="mail-num-icon" data-copy="' + escapeAttr(digits) + '" title="' + copyHintText + '" role="button" tabindex="0">'
+                        + '<span class="mail-num-icon">'
                         + '<svg class="mail-num-icon-copy" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M4 1.5A1.5 1.5 0 0 1 5.5 0H11a1.5 1.5 0 0 1 1.5 1.5V4H11V1.5H5.5V13H11v-1.5h1.5V13A1.5 1.5 0 0 1 11 14.5H5.5A1.5 1.5 0 0 1 4 13V1.5z"/><path d="M6.5 3A1.5 1.5 0 0 0 5 4.5v10A1.5 1.5 0 0 0 6.5 16h6a1.5 1.5 0 0 0 1.5-1.5v-10A1.5 1.5 0 0 0 12.5 3h-6zm0 1.5h6v10h-6v-10z"/></svg>'
                         + '<svg class="mail-num-icon-check" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg>'
                         + '</span>'
@@ -218,12 +218,13 @@
             if (this.checked) { startTimer(); } else { stopTimer(); }
         });
         document.getElementById('mailFilter').addEventListener('input', applyFilter);
-        // Copy the number when its icon is clicked/activated (delegated so it survives re-renders).
-        function copyNumber(icon) {
-            var value = icon.getAttribute('data-copy') || '';
+        // Copy the number when its badge is clicked/activated (text or icon both
+        // trigger it; delegated so it survives re-renders).
+        function copyNumber(badge) {
+            var value = badge.getAttribute('data-copy') || '';
             var showCopied = function () {
-                icon.classList.add('copied');
-                setTimeout(function () { icon.classList.remove('copied'); }, 1200);
+                badge.classList.add('copied');
+                setTimeout(function () { badge.classList.remove('copied'); }, 1200);
             };
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(value).then(showCopied).catch(showCopied);
@@ -238,16 +239,16 @@
             }
         }
         document.getElementById('mailContent').addEventListener('click', function (e) {
-            var icon = e.target.closest('.mail-num-icon');
-            if (!icon) { return; }
-            copyNumber(icon);
+            var badge = e.target.closest('.mail-num-badge');
+            if (!badge) { return; }
+            copyNumber(badge);
         });
         document.getElementById('mailContent').addEventListener('keydown', function (e) {
             if (e.key !== 'Enter' && e.key !== ' ') { return; }
-            var icon = e.target.closest('.mail-num-icon');
-            if (!icon) { return; }
+            var badge = e.target.closest('.mail-num-badge');
+            if (!badge) { return; }
             e.preventDefault();
-            copyNumber(icon);
+            copyNumber(badge);
         });
         window.addEventListener('beforeunload', stopTimer);
 

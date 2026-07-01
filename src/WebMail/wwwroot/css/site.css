@@ -58,6 +58,7 @@ body {
   gap: .15rem;
   margin: 0 .05rem;
   vertical-align: baseline;
+  cursor: pointer;
 }
 
 .mail-num-text {
@@ -68,29 +69,40 @@ body {
   font-weight: 600;
 }
 
+.mail-num-badge:hover .mail-num-text {
+  background: #cfe2ff;
+}
+
 .mail-num-icon {
   display: inline-flex;
   align-items: center;
-  cursor: pointer;
   color: #6c757d;
   line-height: 1;
+  opacity: 0;
 }
 
-.mail-num-icon:hover {
+/* Reveal the icon on hover/focus; keep it visible while copied */
+.mail-num-badge:hover .mail-num-icon,
+.mail-num-badge:focus-visible .mail-num-icon,
+.mail-num-badge.copied .mail-num-icon {
+  opacity: 1;
+}
+
+.mail-num-badge:hover .mail-num-icon {
   color: #0d6efd;
 }
 
-/* Show the copy glyph by default, swap to the check on success */
+/* Copy glyph by default, swap to the green check on success */
 .mail-num-icon-check {
   display: none;
   color: #198754;
 }
 
-.mail-num-icon.copied .mail-num-icon-copy {
+.mail-num-badge.copied .mail-num-icon-copy {
   display: none;
 }
 
-.mail-num-icon.copied .mail-num-icon-check {
+.mail-num-badge.copied .mail-num-icon-check {
   display: inline-block;
 }
 
