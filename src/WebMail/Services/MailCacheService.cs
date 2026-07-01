@@ -20,9 +20,7 @@ public interface IMailCacheService
 
 public sealed partial class MailCacheService(
     IServiceScopeFactory scopeFactory,
-    IEmailProviderResolver providers,
-    IConfiguration configuration,
-    ITokenProtector tokenProtector) : IMailCacheService
+    IConfiguration configuration) : IMailCacheService
 {
     private readonly ConcurrentDictionary<long, CacheEntry> _cache = new();
 
@@ -74,7 +72,8 @@ public sealed partial class MailCacheService(
     private async Task<IReadOnlyList<ProviderMessage>> FetchAsync(long buyerId, CancellationToken cancellationToken)
     {
         using var scope = scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<WebMailDbContext>();
+        var sp = scope.ServiceProvider;
+        var db = sp.GetRequiredService<WebMailDbContext>();
 
         var account = await db.EmailAccounts.FirstOrDefaultAsync(a => a.BuyerId == buyerId, cancellationToken);
         if (account is null)
@@ -84,7 +83,9 @@ public sealed partial class MailCacheService(
 
         var days = configuration.GetValue("MailSync:InitialSyncDays", 30);
         var since = DateTimeOffset.UtcNow.AddDays(-days);
+        var tokenProtector = sp.GetRequiredService<ITokenProtector>();
         var refreshToken = tokenProtector.Unprotect(account.EncryptedRefreshToken);
+        var providers = sp.GetRequiredService<IEmailProviderResolver>();
         var provider = providers.Resolve(account.Provider);
         return await provider.FetchMessagesAsync(refreshToken, Array.Empty<string>(), since, cancellationToken);
     }

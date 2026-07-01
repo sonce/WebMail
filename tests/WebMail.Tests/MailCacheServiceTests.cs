@@ -78,8 +78,8 @@ public sealed class MailCacheServiceTests
                 ["MailSync:CacheTtlSeconds"] = ttlSeconds.ToString()
             })
             .Build();
-        var scopeFactory = new StubScopeFactory(db ?? CreateDb());
-        return new MailCacheService(scopeFactory, resolver, config, new FakeTokenProtector());
+        var scopeFactory = new StubScopeFactory(db ?? CreateDb(), resolver, new FakeTokenProtector());
+        return new MailCacheService(scopeFactory, config);
     }
 
     private static EmailAccount Account(long buyerId = 1, long accountId = 1, string provider = "Fake") => new()
@@ -192,6 +192,37 @@ public sealed class MailCacheServiceTests
         Assert.Equal(EmailAuthorizationStatus.Abnormal, buyer.EmailStatus);
     }
 
+    [Fact]
+    public void MailCacheServiceResolvesAsSingletonFromRealContainerWithoutCaptiveScopedDependency()
+    {
+        // Mirrors Program.cs registrations enough to trigger DI lifetime validation:
+        // the singleton MailCacheService must NOT capture scoped IEmailProviderResolver
+        // / ITokenProtector. ServiceProvider build performs eager validation and throws
+        // AggregateException if a singleton consumes a scoped service.
+        var services = new ServiceCollection();
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["MailSync:CacheTtlSeconds"] = "30"
+        }).Build();
+        services.AddSingleton<IConfiguration>(config);
+        services.AddDbContext<WebMailDbContext>(o => o.UseInMemoryDatabase("di-check"));
+        services.AddHttpClient<GmailProvider>();
+        services.AddScoped<IEmailProvider>(sp => sp.GetRequiredService<GmailProvider>());
+        services.AddHttpClient<OutlookProvider>();
+        services.AddScoped<IEmailProvider>(sp => sp.GetRequiredService<OutlookProvider>());
+        services.AddScoped<IEmailProviderResolver, EmailProviderResolver>();
+        services.AddScoped<ITokenProtector, DataProtectionTokenProtector>();
+        services.AddDataProtection();
+        services.AddSingleton<IMailCacheService, MailCacheService>();
+
+        using var provider = services.BuildServiceProvider(validateScopes: true);
+
+        // Resolving the singleton forces construction; with validateScopes this throws
+        // if a captive scoped dependency exists.
+        var svc = provider.GetRequiredService<IMailCacheService>();
+        Assert.IsType<MailCacheService>(svc);
+    }
+
     // ---- test doubles ----
 
     private sealed class CountingProvider(string name, IReadOnlyList<ProviderMessage> messages) : IEmailProvider
@@ -230,17 +261,23 @@ public sealed class MailCacheServiceTests
         public Task<IReadOnlyList<ProviderMessage>> FetchMessagesAsync(string rt, IReadOnlyCollection<string> s, DateTimeOffset? since, CancellationToken ct) => throw new ProviderAuthorizationException("auth failed");
     }
 
-    private sealed class StubScopeFactory(WebMailDbContext db) : IServiceScopeFactory
+    private sealed class StubScopeFactory(WebMailDbContext db, IEmailProviderResolver resolver, ITokenProtector tokenProtector) : IServiceScopeFactory
     {
-        public IServiceScope CreateScope() => new StubScope(db);
-        private sealed class StubScope(WebMailDbContext db) : IServiceScope
+        public IServiceScope CreateScope() => new StubScope(db, resolver, tokenProtector);
+        private sealed class StubScope(WebMailDbContext db, IEmailProviderResolver resolver, ITokenProtector tokenProtector) : IServiceScope
         {
-            public IServiceProvider ServiceProvider { get; } = new StubProvider(db);
+            public IServiceProvider ServiceProvider { get; } = new StubProvider(db, resolver, tokenProtector);
             public void Dispose() { }
         }
-        private sealed class StubProvider(WebMailDbContext db) : IServiceProvider
+        private sealed class StubProvider(WebMailDbContext db, IEmailProviderResolver resolver, ITokenProtector tokenProtector) : IServiceProvider
         {
-            public object? GetService(Type serviceType) => serviceType == typeof(WebMailDbContext) ? db : null;
+            public object? GetService(Type serviceType) => serviceType switch
+            {
+                _ when serviceType == typeof(WebMailDbContext) => db,
+                _ when serviceType == typeof(IEmailProviderResolver) => resolver,
+                _ when serviceType == typeof(ITokenProtector) => tokenProtector,
+                _ => null
+            };
         }
     }
 }
