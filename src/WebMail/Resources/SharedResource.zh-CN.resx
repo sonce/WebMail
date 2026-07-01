@@ -195,5 +195,4 @@
   <data name="Mail.FilterPlaceholder" xml:space="preserve"><value>筛选发件人/主题…</value></data>
   <data name="Mail.Fetching" xml:space="preserve"><value>获取中…</value></data>
   <data name="Mail.CopyNumberHint" xml:space="preserve"><value>点击复制</value></data>
-  <data name="Mail.Copied" xml:space="preserve"><value>已复制</value></data>
 </root>

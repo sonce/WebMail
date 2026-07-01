@@ -195,5 +195,4 @@
   <data name="Mail.FilterPlaceholder" xml:space="preserve"><value>Filter sender/subject…</value></data>
   <data name="Mail.Fetching" xml:space="preserve"><value>Fetching…</value></data>
   <data name="Mail.CopyNumberHint" xml:space="preserve"><value>Click to copy</value></data>
-  <data name="Mail.Copied" xml:space="preserve"><value>Copied</value></data>
 </root>
