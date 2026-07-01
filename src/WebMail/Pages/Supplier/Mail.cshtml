@@ -59,6 +59,8 @@
         var refreshBtn = document.getElementById('refreshBtn');
         var refreshLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Mail.Refresh"].Value));
         var fetchingLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Mail.Fetching"].Value));
+        var copyHintText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Mail.CopyNumberHint"].Value));
+        var copiedText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Mail.Copied"].Value));
         var pollUrl = '?handler=poll&buyerId=' + buyerId;
         var timer = null;
         var fetching = false;
@@ -85,7 +87,7 @@
                 return '<tr>'
                     + '<td data-label="' + sourceText + '">' + source + '</td>'
                     + '<td data-label="' + senderText + '" data-filter="' + escapeAttr(m.sender) + '">' + senderLink(m.sender) + '</td>'
-                    + '<td class="td-subject" data-label="' + subjectText + '">' + escapeHtml(m.subject) + '</td>'
+                    + '<td class="td-subject" data-label="' + subjectText + '">' + highlightNumbers(m.subject) + '</td>'
                     + '<td data-label="' + sentAtText + '">' + formatSentAt(m.sentAt) + '</td>'
                     + '</tr>';
             }).join('');
@@ -121,6 +123,35 @@
 
         function escapeAttr(s) {
             return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        // Highlight runs of 5+ digits in the subject as a clickable copy badge.
+        // Non-digit segments are HTML-escaped; digit runs are wrapped and their raw
+        // value stashed in data-copy for the click handler.
+        function highlightNumbers(subject) {
+            var s = String(subject == null ? '' : subject);
+            var out = '', i = 0, n = s.length;
+            while (i < n) {
+                var digits = '';
+                while (i < n && s.charAt(i) >= '0' && s.charAt(i) <= '9') {
+                    digits += s.charAt(i);
+                    i++;
+                }
+                if (digits.length >= 5) {
+                    out += '<span class="mail-num-badge" data-copy="' + escapeAttr(digits) + '" title="' + copyHintText + '">' + escapeHtml(digits) + '</span>';
+                } else if (digits.length > 0) {
+                    out += escapeHtml(digits);
+                }
+                var text = '';
+                while (i < n && (s.charAt(i) < '0' || s.charAt(i) > '9')) {
+                    text += s.charAt(i);
+                    i++;
+                }
+                if (text.length > 0) {
+                    out += escapeHtml(text);
+                }
+            }
+            return out;
         }
 
         // Display the sender as a mailto link; show the address via tooltip. Falls back
@@ -182,6 +213,32 @@
             if (this.checked) { startTimer(); } else { stopTimer(); }
         });
         document.getElementById('mailFilter').addEventListener('input', applyFilter);
+        // Copy a highlighted number badge on click (delegated so it survives re-renders).
+        document.getElementById('mailContent').addEventListener('click', function (e) {
+            var badge = e.target.closest('.mail-num-badge');
+            if (!badge) { return; }
+            var value = badge.getAttribute('data-copy') || '';
+            var showCopied = function () {
+                var prev = badge.textContent;
+                badge.textContent = copiedText;
+                badge.classList.add('copied');
+                setTimeout(function () {
+                    badge.textContent = prev;
+                    badge.classList.remove('copied');
+                }, 1200);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(value).then(showCopied).catch(showCopied);
+            } else {
+                var ta = document.createElement('textarea');
+                ta.value = value;
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); } catch (err) {}
+                document.body.removeChild(ta);
+                showCopied();
+            }
+        });
         window.addEventListener('beforeunload', stopTimer);
 
         // Fetch mail immediately so the page fills in right after load; the timer

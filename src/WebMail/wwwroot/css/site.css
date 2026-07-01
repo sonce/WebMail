@@ -51,6 +51,28 @@ body {
   min-width: 12rem;
 }
 
+/* Clickable number badges inside mail subjects (5+ digit runs) */
+.mail-num-badge {
+  display: inline-block;
+  padding: .05rem .35rem;
+  margin: 0 .05rem;
+  border-radius: .375rem;
+  background: #e7f1ff;
+  color: #0d6efd;
+  cursor: pointer;
+  font-weight: 600;
+  vertical-align: baseline;
+}
+
+.mail-num-badge:hover {
+  background: #cfe2ff;
+}
+
+.mail-num-badge.copied {
+  background: #d1e7dd;
+  color: #198754;
+}
+
 /* ===== Responsive card-style tables (mobile only) ===== */
 /* On phones, each table row collapses into a card with stacked
    "label: value" lines. Desktop layout is untouched. */
