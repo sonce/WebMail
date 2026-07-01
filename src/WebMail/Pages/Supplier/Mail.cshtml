@@ -56,8 +56,12 @@
         var senderText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Table.Sender"].Value));
         var subjectText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Table.Subject"].Value));
         var sentAtText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Table.SentAt"].Value));
+        var refreshBtn = document.getElementById('refreshBtn');
+        var refreshLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Mail.Refresh"].Value));
+        var fetchingLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Mail.Fetching"].Value));
         var pollUrl = '?handler=poll&buyerId=' + buyerId;
         var timer = null;
+        var fetching = false;
 
         function render(data) {
             var content = document.getElementById('mailContent');
@@ -149,19 +153,31 @@
         }
 
         function fetchMail(force) {
+            // Auto-poll skips when a fetch is already in flight, to avoid piling up
+            // requests. Manual refresh always proceeds and shows the busy state.
+            if (!force && fetching) { return; }
+            fetching = true;
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = fetchingLabel;
+            var done = function () {
+                fetching = false;
+                refreshBtn.disabled = false;
+                refreshBtn.textContent = refreshLabel;
+            };
             $.getJSON(pollUrl + (force ? '&force=true' : ''))
                 .done(render)
                 .fail(function () {
                     var alert = document.getElementById('mailAlert');
                     alert.textContent = refreshFailedText;
                     alert.classList.remove('d-none');
-                });
+                })
+                .always(done);
         }
 
         function startTimer() { stopTimer(); timer = setInterval(function () { fetchMail(false); }, 15000); }
         function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
 
-        document.getElementById('refreshBtn').addEventListener('click', function () { fetchMail(true); });
+        refreshBtn.addEventListener('click', function () { fetchMail(true); });
         document.getElementById('autoPollToggle').addEventListener('change', function () {
             if (this.checked) { startTimer(); } else { stopTimer(); }
         });
