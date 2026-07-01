@@ -80,9 +80,9 @@
                 var source = m.folder === 2 ? '<span class="badge bg-warning text-dark">' + junkText + '</span>' : '';
                 return '<tr>'
                     + '<td data-label="' + sourceText + '">' + source + '</td>'
-                    + '<td data-label="' + senderText + '">' + escapeHtml(m.sender) + '</td>'
+                    + '<td data-label="' + senderText + '" data-filter="' + escapeAttr(m.sender) + '">' + senderLink(m.sender) + '</td>'
                     + '<td data-label="' + subjectText + '">' + escapeHtml(m.subject) + '</td>'
-                    + '<td data-label="' + sentAtText + '">' + escapeHtml(m.sentAt) + '</td>'
+                    + '<td data-label="' + sentAtText + '">' + formatSentAt(m.sentAt) + '</td>'
                     + '</tr>';
             }).join('');
 
@@ -98,9 +98,13 @@
             if (!body) { return; }
             var rows = body.querySelectorAll('tr');
             for (var i = 0; i < rows.length; i++) {
-                var senderCell = rows[i].cells[1] ? rows[i].cells[1].textContent : '';
-                var subjectCell = rows[i].cells[2] ? rows[i].cells[2].textContent : '';
-                var match = senderCell.toLowerCase().indexOf(term) !== -1 || subjectCell.toLowerCase().indexOf(term) !== -1;
+                // Match against the full sender (data-filter: name + address) so
+                // filtering by email works even though only the name is visible.
+                var senderCell = rows[i].cells[1];
+                var subjectCell = rows[i].cells[2];
+                var senderText = (senderCell && (senderCell.getAttribute('data-filter') || senderCell.textContent)) || '';
+                var subjectText = (subjectCell && subjectCell.textContent) || '';
+                var match = senderText.toLowerCase().indexOf(term) !== -1 || subjectText.toLowerCase().indexOf(term) !== -1;
                 rows[i].style.display = match ? '' : 'none';
             }
         }
@@ -109,6 +113,39 @@
             return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
                 return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
             });
+        }
+
+        function escapeAttr(s) {
+            return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        // Display the sender as a mailto link; show the address via tooltip. Falls back
+        // to plain text when no parseable address is present. Handles "Name <addr>" and
+        // bare "addr" forms.
+        function senderLink(rawSender) {
+            var s = String(rawSender == null ? '' : rawSender).trim();
+            var lt = s.lastIndexOf('<'), gt = s.lastIndexOf('>');
+            var email = '', name = '';
+            if (lt !== -1 && gt !== -1 && gt > lt) {
+                email = s.substring(lt + 1, gt).trim();
+                name = s.substring(0, lt).trim();
+            } else if (s.indexOf('@@') !== -1) {
+                email = s;
+            }
+            var display = name || email || s;
+            if (email) {
+                return '<a href="mailto:' + escapeAttr(email) + '" title="' + escapeAttr(email) + '">' + escapeHtml(display) + '</a>';
+            }
+            return escapeHtml(display);
+        }
+
+        // Format the ISO timestamp as YYYY-MM-DD HH:MM:SS in local time.
+        function formatSentAt(iso) {
+            var d = new Date(iso);
+            if (isNaN(d.getTime())) { return escapeHtml(iso); }
+            var pad = function (n) { return n < 10 ? '0' + n : '' + n; };
+            return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+                + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
         }
 
         function fetchMail(force) {
