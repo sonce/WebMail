@@ -39,6 +39,7 @@ public class MailModel : PageModel
         && b.EmailStatus == EmailAuthorizationStatus.Authorized);
 
     public long BuyerId { get; private set; }
+    public string? BuyerEmail { get; private set; }
     public IReadOnlyList<Domain.MailMessageView> Messages { get; private set; } = Array.Empty<Domain.MailMessageView>();
     public IReadOnlyList<Shipment> Shipments { get; private set; } = Array.Empty<Shipment>();
     public string? Message { get; private set; }
@@ -57,6 +58,10 @@ public class MailModel : PageModel
         }
 
         BuyerId = buyerId;
+        BuyerEmail = await _db.EmailAccounts
+            .Where(a => a.BuyerId == buyerId)
+            .Select(a => a.Email)
+            .FirstOrDefaultAsync();
 
         // Mail is fetched asynchronously by the page's AJAX polling (OnGetPoll) after
         // render, so the page loads instantly instead of blocking on a Gmail fetch.

@@ -41,6 +41,7 @@
   <data name="Common.BackToList" xml:space="preserve"><value>Back to list</value></data>
   <data name="Common.NoMail" xml:space="preserve"><value>No mail yet.</value></data>
   <data name="Table.CardNo" xml:space="preserve"><value>Card key</value></data>
+  <data name="Table.AccountEmail" xml:space="preserve"><value>Account / email</value></data>
   <data name="Table.EmailStatus" xml:space="preserve"><value>Email status</value></data>
   <data name="Table.BuyerStatus" xml:space="preserve"><value>Buyer status</value></data>
   <data name="Table.Stage" xml:space="preserve"><value>Stage</value></data>
@@ -115,6 +116,7 @@
   <data name="Supplier.StatusUpdated" xml:space="preserve"><value>Processing status updated.</value></data>
   <data name="Supplier.StatusUpdateFailed" xml:space="preserve"><value>Cannot update this buyer's processing status.</value></data>
   <data name="Supplier.Mail.Title" xml:space="preserve"><value>Buyer mail</value></data>
+  <data name="Mail.BuyerEmail" xml:space="preserve"><value>Buyer email</value></data>
   <data name="Mail.Junk" xml:space="preserve"><value>Junk</value></data>
   <data name="Buyer.Verify.Title" xml:space="preserve"><value>Verify card key</value></data>
   <data name="Buyer.LinkInvalid" xml:space="preserve"><value>Invalid link</value></data>
@@ -168,6 +170,7 @@
   <data name="CardKey.SendModalTitle" xml:space="preserve"><value>Send to sales</value></data>
   <data name="CardKey.ConfirmSend" xml:space="preserve"><value>Confirm</value></data>
   <data name="CardKey.CopyLink" xml:space="preserve"><value>Copy link</value></data>
+  <data name="Action.CopyEmail" xml:space="preserve"><value>Copy email</value></data>
   <data name="CardKey.SentAt" xml:space="preserve"><value>Sent at</value></data>
   <data name="CardKey.Sent" xml:space="preserve"><value>Sent {0} card(s).</value></data>
   <data name="CardKey.SendNoneSelected" xml:space="preserve"><value>Select at least one unsent card.</value></data>

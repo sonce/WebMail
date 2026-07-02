@@ -3,9 +3,9 @@
 @model WebMail.Pages.Supplier.BuyersModel
 @{
     ViewData["Title"] = L["Supplier.Buyers.Title"].Value;
-    var unprocessed = Model.Buyers.Where(b => b.SupplierStatus == SupplierProcessingStatus.Unprocessed).ToList();
-    var failed = Model.Buyers.Where(b => b.SupplierStatus == SupplierProcessingStatus.Failed).ToList();
-    var completed = Model.Buyers.Where(b => b.SupplierStatus == SupplierProcessingStatus.Completed).ToList();
+    var unprocessed = Model.Buyers.Where(r => r.Buyer.SupplierStatus == SupplierProcessingStatus.Unprocessed).ToList();
+    var failed = Model.Buyers.Where(r => r.Buyer.SupplierStatus == SupplierProcessingStatus.Failed).ToList();
+    var completed = Model.Buyers.Where(r => r.Buyer.SupplierStatus == SupplierProcessingStatus.Completed).ToList();
 }
 
 <h1 class="display-6">@L["Supplier.Buyers.Title"]</h1>
@@ -46,11 +46,11 @@
         var copiedIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">' +
             '<path d="M13.485 1.431a1.473 1.473 0 0 1 2.104 2.062l-7.84 9.801a1.473 1.473 0 0 1-2.12.04L.431 8.138a1.473 1.473 0 0 1 2.084-2.083l4.111 4.112 6.82-8.69a.486.486 0 0 1 .04-.045z"/></svg>';
 
-        document.querySelectorAll('.copy-link').forEach(function (btn) {
+        document.querySelectorAll('.copy-email').forEach(function (btn) {
             var original = btn.innerHTML;
             var timer = null;
             btn.addEventListener('click', function () {
-                navigator.clipboard.writeText(btn.getAttribute('data-link'));
+                navigator.clipboard.writeText(btn.getAttribute('data-email'));
                 btn.innerHTML = copiedIcon;
                 btn.classList.add('copied');
                 if (timer) { clearTimeout(timer); }

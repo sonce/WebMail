@@ -28,6 +28,7 @@ public class BuyersModel : PageModel
     public IReadOnlyList<Domain.Buyer> Buyers { get; private set; } = Array.Empty<Domain.Buyer>();
     public IReadOnlyList<SupplierOption> Suppliers { get; private set; } = Array.Empty<SupplierOption>();
     public IReadOnlyDictionary<long, SupplierAssignmentView> AssignmentByBuyer { get; private set; } = new Dictionary<long, SupplierAssignmentView>();
+    public IReadOnlyDictionary<long, string> EmailByBuyer { get; private set; } = new Dictionary<long, string>();
     public string? Message { get; private set; }
 
     [BindProperty(SupportsGet = true)] public BuyerStage? StageFilter { get; set; }
@@ -189,6 +190,11 @@ public class BuyersModel : PageModel
             map[b.Id] = assigned.TryGetValue(b.Id, out var view) ? view : new SupplierAssignmentView(null, string.Empty);
         }
         AssignmentByBuyer = map;
+
+        // 加载各买家绑定的授权邮箱（用于「账号/邮箱」列：授权后展示邮箱）。
+        EmailByBuyer = await _db.EmailAccounts
+            .Where(e => buyerIds.Contains(e.BuyerId))
+            .ToDictionaryAsync(e => e.BuyerId, e => e.Email);
     }
 }
 

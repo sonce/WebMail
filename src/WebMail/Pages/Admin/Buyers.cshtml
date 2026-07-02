@@ -3,6 +3,13 @@
 @model WebMail.Pages.Admin.BuyersModel
 @{
     ViewData["Title"] = L["Admin.Buyers.Title"].Value;
+    // 局部视图 _AdminBuyerTable 通过 ViewData 读取供应商下拉与指派映射。
+    ViewData["AdminSuppliers"] = Model.Suppliers;
+    ViewData["AdminAssignments"] = Model.AssignmentByBuyer;
+    ViewData["AdminEmails"] = Model.EmailByBuyer;
+    var unprocessed = Model.Buyers.Where(b => b.SupplierStatus == SupplierProcessingStatus.Unprocessed).ToList();
+    var failed = Model.Buyers.Where(b => b.SupplierStatus == SupplierProcessingStatus.Failed).ToList();
+    var completed = Model.Buyers.Where(b => b.SupplierStatus == SupplierProcessingStatus.Completed).ToList();
 }
 
 <h1 class="display-6">@L["Admin.Buyers.Title"]</h1>
@@ -40,107 +47,31 @@
     </div>
 </form>
 
-@if (Model.Buyers.Count == 0)
-{
-    <p>@L["Common.NoBuyers"]</p>
-}
-else
-{
-    <div class="table-responsive">
-    <table class="table table-striped table-cards">
-        <thead>
-            <tr>
-                <th>@L["Table.CardNo"]</th>
-                <th>@L["Table.EmailStatus"]</th>
-                <th>@L["Table.Stage"]</th>
-                <th>@L["Table.ReviewStatus"]</th>
-                <th>@L["Table.Supplier"]</th>
-                <th>@L["Table.SupplierStatus"]</th>
-                <th>@L["Table.CreatedAt"]</th>
-                <th>@L["Table.Operations"]</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var buyer in Model.Buyers)
-            {
-                var link = $"{Request.Scheme}://{Request.Host}/?card={buyer.CardNo}";
-                if (buyer.SaleId is not null)
-                {
-                    link += $"&saleid={buyer.SaleId}";
-                }
-                <tr>
-                    <td data-label="@L["Table.CardNo"]" class="td-cardno">
-                        <div class="cardno-cell">
-                            <span class="cardno-text" title="@buyer.CardNo">@buyer.CardNo</span>
-                            <button type="button" class="btn btn-sm btn-link p-0 copy-link"
-                                    data-link="@link" title="@L["CardKey.CopyLink"]" aria-label="@L["CardKey.CopyLink"]">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                    <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1z"/>
-                                    <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0z"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </td>
-                    <td data-label="@L["Table.EmailStatus"]">@buyer.EmailStatus</td>
-                    <td data-label="@L["Table.Stage"]">@buyer.Stage</td>
-                    <partial name="_ReviewStatusCell" model="buyer" />
-                    @{
-                        var assignment = Model.AssignmentByBuyer.TryGetValue(buyer.Id, out var a) ? a : null;
-                        var supplierName = string.IsNullOrEmpty(a?.DisplayName) ? "—" : a.DisplayName;
-                    }
-                    <td data-label="@L["Table.Supplier"]" class="td-supplier">
-                        <span class="supplier-display">
-                            <span class="supplier-name">@supplierName</span>
-                            <button type="button" class="btn btn-sm btn-link p-0 supplier-edit" aria-label="@L["Action.AssignSupplier"]">✎</button>
-                        </span>
-                        <form method="post" asp-page-handler="AssignSupplier" class="supplier-form d-none align-items-center gap-1">
-                            <input type="hidden" name="buyerId" value="@buyer.Id" />
-                            <select name="supplierId" class="form-select form-select-sm" style="width:auto;">
-                                <option value="">@L["Action.Unassigned"]</option>
-                                @foreach (var s in Model.Suppliers)
-                                {
-                                    if (a is not null && a.SupplierId == s.Id)
-                                    {
-                                        <option value="@s.Id" selected>@s.DisplayName</option>
-                                    }
-                                    else
-                                    {
-                                        <option value="@s.Id">@s.DisplayName</option>
-                                    }
-                                }
-                            </select>
-                            <button type="submit" class="btn btn-sm btn-primary">@L["Common.Save"]</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary supplier-cancel">@L["Common.Cancel"]</button>
-                        </form>
-                    </td>
-                    <td data-label="@L["Table.SupplierStatus"]"><partial name="_SupplierStatusBadge" model="buyer.SupplierStatus" /></td>
-                    <td data-label="@L["Table.CreatedAt"]">@buyer.CreatedAt</td>
-                    <td data-label="@L["Table.Operations"]" class="td-actions">
-                        <a class="btn btn-sm btn-primary" asp-page="/Supplier/Mail" asp-route-buyerId="@buyer.Id">@L["Action.ViewMail"]</a>
-                        @if (buyer.Stage == BuyerStage.Submitted && buyer.ReviewStatus == ReviewStatus.Pending)
-                        {
-                            <div class="d-flex gap-2 flex-wrap">
-                                <form method="post" asp-page-handler="Approve">
-                                    <input type="hidden" name="id" value="@buyer.Id" />
-                                    <button type="submit" class="btn btn-sm btn-success">@L["Action.Approve"]</button>
-                                </form>
-                                <form method="post" asp-page-handler="Reject">
-                                    <input type="hidden" name="id" value="@buyer.Id" />
-                                    <button type="submit" class="btn btn-sm btn-danger">@L["Action.Reject"]</button>
-                                </form>
-                            </div>
-                        }
-                        <form method="post" asp-page-handler="Delete" class="mt-1">
-                            <input type="hidden" name="id" value="@buyer.Id" />
-                            <button type="submit" class="btn btn-sm btn-outline-danger">@L["Common.Delete"]</button>
-                        </form>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+<ul class="nav nav-tabs" id="adminBuyerTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="unprocessed-tab" data-bs-toggle="tab"
+                data-bs-target="#unprocessed-pane" type="button" role="tab">@L["Supplier.Tab.Unprocessed"] (@unprocessed.Count)</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="failed-tab" data-bs-toggle="tab"
+                data-bs-target="#failed-pane" type="button" role="tab">@L["Supplier.Tab.Failed"] (@failed.Count)</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="completed-tab" data-bs-toggle="tab"
+                data-bs-target="#completed-pane" type="button" role="tab">@L["Supplier.Tab.Completed"] (@completed.Count)</button>
+    </li>
+</ul>
+<div class="tab-content pt-3">
+    <div class="tab-pane fade show active" id="unprocessed-pane" role="tabpanel" aria-labelledby="unprocessed-tab">
+        <partial name="_AdminBuyerTable" model="unprocessed" />
     </div>
-}
+    <div class="tab-pane fade" id="failed-pane" role="tabpanel" aria-labelledby="failed-tab">
+        <partial name="_AdminBuyerTable" model="failed" />
+    </div>
+    <div class="tab-pane fade" id="completed-pane" role="tabpanel" aria-labelledby="completed-tab">
+        <partial name="_AdminBuyerTable" model="completed" />
+    </div>
+</div>
 
 @section Scripts {
     <script>
@@ -152,6 +83,22 @@ else
             var timer = null;
             btn.addEventListener('click', function () {
                 navigator.clipboard.writeText(btn.getAttribute('data-link'));
+                btn.innerHTML = copiedIcon;
+                btn.classList.add('copied');
+                if (timer) { clearTimeout(timer); }
+                timer = setTimeout(function () {
+                    btn.innerHTML = original;
+                    btn.classList.remove('copied');
+                    timer = null;
+                }, 1500);
+            });
+        });
+
+        document.querySelectorAll('.copy-email').forEach(function (btn) {
+            var original = btn.innerHTML;
+            var timer = null;
+            btn.addEventListener('click', function () {
+                navigator.clipboard.writeText(btn.getAttribute('data-email'));
                 btn.innerHTML = copiedIcon;
                 btn.classList.add('copied');
                 if (timer) { clearTimeout(timer); }

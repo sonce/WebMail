@@ -41,6 +41,7 @@
   <data name="Common.BackToList" xml:space="preserve"><value>返回列表</value></data>
   <data name="Common.NoMail" xml:space="preserve"><value>暂无邮件。</value></data>
   <data name="Table.CardNo" xml:space="preserve"><value>卡密</value></data>
+  <data name="Table.AccountEmail" xml:space="preserve"><value>账号/邮箱</value></data>
   <data name="Table.EmailStatus" xml:space="preserve"><value>邮箱状态</value></data>
   <data name="Table.BuyerStatus" xml:space="preserve"><value>买家状态</value></data>
   <data name="Table.Stage" xml:space="preserve"><value>流程</value></data>
@@ -115,6 +116,7 @@
   <data name="Supplier.StatusUpdated" xml:space="preserve"><value>已更新处理状态。</value></data>
   <data name="Supplier.StatusUpdateFailed" xml:space="preserve"><value>无法更新该买家的处理状态。</value></data>
   <data name="Supplier.Mail.Title" xml:space="preserve"><value>买家邮件</value></data>
+  <data name="Mail.BuyerEmail" xml:space="preserve"><value>买家邮箱</value></data>
   <data name="Mail.Junk" xml:space="preserve"><value>垃圾邮件</value></data>
   <data name="Buyer.Verify.Title" xml:space="preserve"><value>验证卡密</value></data>
   <data name="Buyer.LinkInvalid" xml:space="preserve"><value>链接无效</value></data>
@@ -168,6 +170,7 @@
   <data name="CardKey.SendModalTitle" xml:space="preserve"><value>发送给销售</value></data>
   <data name="CardKey.ConfirmSend" xml:space="preserve"><value>确认发送</value></data>
   <data name="CardKey.CopyLink" xml:space="preserve"><value>复制链接</value></data>
+  <data name="Action.CopyEmail" xml:space="preserve"><value>复制邮箱</value></data>
   <data name="CardKey.SentAt" xml:space="preserve"><value>发送时间</value></data>
   <data name="CardKey.Sent" xml:space="preserve"><value>已发送 {0} 张。</value></data>
   <data name="CardKey.SendNoneSelected" xml:space="preserve"><value>请先勾选要发送的卡密。</value></data>

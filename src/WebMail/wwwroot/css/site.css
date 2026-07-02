@@ -36,12 +36,14 @@ body {
   vertical-align: middle;
 }
 
-.cardno-cell .copy-link {
+.cardno-cell .copy-link,
+.cardno-cell .copy-email {
   flex: 0 0 auto;
   line-height: 1;
 }
 
-.cardno-cell .copy-link.copied {
+.cardno-cell .copy-link.copied,
+.cardno-cell .copy-email.copied {
   color: #198754;
 }
 

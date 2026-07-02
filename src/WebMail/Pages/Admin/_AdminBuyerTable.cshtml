@@ -1,0 +1,124 @@
+@using WebMail.Domain
+@model IReadOnlyList<Buyer>
+@{
+    var suppliers = (IReadOnlyList<WebMail.Pages.Admin.SupplierOption>)ViewData["AdminSuppliers"]!;
+    var assignmentByBuyer = (IReadOnlyDictionary<long, WebMail.Pages.Admin.SupplierAssignmentView>)ViewData["AdminAssignments"]!;
+    var emailByBuyer = (IReadOnlyDictionary<long, string>)ViewData["AdminEmails"]!;
+}
+
+@if (Model.Count == 0)
+{
+    <p>@L["Common.NoBuyers"]</p>
+}
+else
+{
+    <div class="table-responsive">
+    <table class="table table-striped table-cards">
+        <thead>
+            <tr>
+                <th>@L["Table.AccountEmail"]</th>
+                <th>@L["Table.EmailStatus"]</th>
+                <th>@L["Table.Stage"]</th>
+                <th>@L["Table.ReviewStatus"]</th>
+                <th>@L["Table.Supplier"]</th>
+                <th>@L["Table.SupplierStatus"]</th>
+                <th>@L["Table.CreatedAt"]</th>
+                <th>@L["Table.Operations"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var buyer in Model)
+            {
+                var link = $"{Context.Request.Scheme}://{Context.Request.Host}/?card={buyer.CardNo}";
+                if (buyer.SaleId is not null)
+                {
+                    link += $"&saleid={buyer.SaleId}";
+                }
+                var buyerEmail = emailByBuyer.TryGetValue(buyer.Id, out var em) ? em : null;
+                // 授权后展示邮箱；未授权或无邮箱时回退展示卡密（账号）。
+                var accountEmail = buyer.EmailStatus == EmailAuthorizationStatus.Authorized && !string.IsNullOrEmpty(buyerEmail)
+                    ? buyerEmail
+                    : buyer.CardNo;
+                var hasEmail = !string.IsNullOrEmpty(buyerEmail);
+                <tr>
+                    <td data-label="@L["Table.AccountEmail"]" class="td-cardno">
+                        <div class="cardno-cell">
+                            <span class="cardno-text" title="@accountEmail">@accountEmail</span>
+                            @if (hasEmail)
+                            {
+                                <button type="button" class="btn btn-sm btn-link p-0 copy-email"
+                                        data-email="@buyerEmail" title="@L["Action.CopyEmail"]" aria-label="@L["Action.CopyEmail"]">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                        <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2zm13 2.383-4.708 2.825L15 11.105V5.383zM1 5.383v5.722l4.708-2.897L1 5.383zM2.242 13H13.758l-3.879-2.39-.79.474a.5.5 0 0 1-.516 0l-.79-.474L2.242 13z"/>
+                                    </svg>
+                                </button>
+                            }
+                            <button type="button" class="btn btn-sm btn-link p-0 copy-link"
+                                    data-link="@link" title="@L["CardKey.CopyLink"]" aria-label="@L["CardKey.CopyLink"]">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1z"/>
+                                    <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                    <td data-label="@L["Table.EmailStatus"]">@buyer.EmailStatus</td>
+                    <td data-label="@L["Table.Stage"]">@buyer.Stage</td>
+                    <partial name="_ReviewStatusCell" model="buyer" />
+                    @{
+                        var assignment = assignmentByBuyer.TryGetValue(buyer.Id, out var a) ? a : null;
+                        var supplierName = string.IsNullOrEmpty(a?.DisplayName) ? "—" : a.DisplayName;
+                    }
+                    <td data-label="@L["Table.Supplier"]" class="td-supplier">
+                        <span class="supplier-display">
+                            <span class="supplier-name">@supplierName</span>
+                            <button type="button" class="btn btn-sm btn-link p-0 supplier-edit" aria-label="@L["Action.AssignSupplier"]">✎</button>
+                        </span>
+                        <form method="post" asp-page-handler="AssignSupplier" class="supplier-form d-none align-items-center gap-1">
+                            <input type="hidden" name="buyerId" value="@buyer.Id" />
+                            <select name="supplierId" class="form-select form-select-sm" style="width:auto;">
+                                <option value="">@L["Action.Unassigned"]</option>
+                                @foreach (var s in suppliers)
+                                {
+                                    if (a is not null && a.SupplierId == s.Id)
+                                    {
+                                        <option value="@s.Id" selected>@s.DisplayName</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@s.Id">@s.DisplayName</option>
+                                    }
+                                }
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-primary">@L["Common.Save"]</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary supplier-cancel">@L["Common.Cancel"]</button>
+                        </form>
+                    </td>
+                    <td data-label="@L["Table.SupplierStatus"]"><partial name="_SupplierStatusBadge" model="buyer.SupplierStatus" /></td>
+                    <td data-label="@L["Table.CreatedAt"]">@buyer.CreatedAt</td>
+                    <td data-label="@L["Table.Operations"]" class="td-actions">
+                        <a class="btn btn-sm btn-primary" asp-page="/Supplier/Mail" asp-route-buyerId="@buyer.Id">@L["Action.ViewMail"]</a>
+                        @if (buyer.Stage == BuyerStage.Submitted && buyer.ReviewStatus == ReviewStatus.Pending)
+                        {
+                            <div class="d-flex gap-2 flex-wrap">
+                                <form method="post" asp-page-handler="Approve">
+                                    <input type="hidden" name="id" value="@buyer.Id" />
+                                    <button type="submit" class="btn btn-sm btn-success">@L["Action.Approve"]</button>
+                                </form>
+                                <form method="post" asp-page-handler="Reject">
+                                    <input type="hidden" name="id" value="@buyer.Id" />
+                                    <button type="submit" class="btn btn-sm btn-danger">@L["Action.Reject"]</button>
+                                </form>
+                            </div>
+                        }
+                        <form method="post" asp-page-handler="Delete" class="mt-1">
+                            <input type="hidden" name="id" value="@buyer.Id" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger">@L["Common.Delete"]</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    </div>
+}

@@ -25,7 +25,7 @@ public class BuyersModel : PageModel
         _loc = loc;
     }
 
-    public IReadOnlyList<Domain.Buyer> Buyers { get; private set; } = Array.Empty<Domain.Buyer>();
+    public IReadOnlyList<BuyerRowView> Buyers { get; private set; } = Array.Empty<BuyerRowView>();
     public string? Message { get; private set; }
 
     public async Task<IActionResult> OnGetAsync()
@@ -80,13 +80,17 @@ public class BuyersModel : PageModel
 
     private async Task LoadBuyersAsync(long supplierId)
     {
-        Buyers = await _db.BuyerSupplierAssignments
-            .Include(x => x.Buyer)
-            .Where(x => x.SupplierId == supplierId
-                && !x.Buyer.IsDeleted
-                && x.Buyer.ReviewStatus == ReviewStatus.Approved
-                && x.Buyer.EmailStatus == EmailAuthorizationStatus.Authorized)
-            .Select(x => x.Buyer)
-            .ToListAsync();
+        // 供应商列表已筛为「邮箱已授权」的买家，左联 EmailAccounts 取授权邮箱用于列表展示。
+        Buyers = await (from a in _db.BuyerSupplierAssignments
+                        where a.SupplierId == supplierId
+                            && !a.Buyer.IsDeleted
+                            && a.Buyer.ReviewStatus == ReviewStatus.Approved
+                            && a.Buyer.EmailStatus == EmailAuthorizationStatus.Authorized
+                        join e in _db.EmailAccounts on a.BuyerId equals e.BuyerId into eg
+                        from e in eg.DefaultIfEmpty()
+                        select new BuyerRowView(a.Buyer, e != null ? e.Email : null))
+                        .ToListAsync();
     }
 }
+
+public sealed record BuyerRowView(Domain.Buyer Buyer, string? Email);
