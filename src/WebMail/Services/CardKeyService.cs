@@ -103,7 +103,7 @@ public sealed class CardKeyService
     }
 
     public async Task<CardKeyResult> SendAsync(
-        IReadOnlyCollection<long> buyerIds, long? saleId, bool autoApprove, long? actingAdminId)
+        IReadOnlyCollection<long> buyerIds, long? saleId, AutoApproveAction action, long? actingAdminId)
     {
         if (buyerIds is null || buyerIds.Count == 0)
         {
@@ -135,14 +135,23 @@ public sealed class CardKeyService
             }
             buyer.Stage = BuyerStage.Sent;
             buyer.CardSentAt = now;
-            buyer.AutoApprove = autoApprove;
+            switch (action)
+            {
+                case AutoApproveAction.AutoApprove:
+                    buyer.AutoApprove = true;
+                    break;
+                case AutoApproveAction.RequireReview:
+                    buyer.AutoApprove = false;
+                    break;
+                // NoChange: 保留每张卡各自的 AutoApprove
+            }
         }
 
         _db.AuditLogs.Add(new AuditLog
         {
             Action = "AdminSendCardKeys",
             UserId = actingAdminId,
-            Details = $"sale={saleId};ids={string.Join(",", targets.Select(b => b.Id))};autoApprove={autoApprove}"
+            Details = $"sale={saleId};ids={string.Join(",", targets.Select(b => b.Id))};autoApproveAction={action}"
         });
         await _db.SaveChangesAsync();
         return new(true, "CardKey.Sent", targets.Count);
