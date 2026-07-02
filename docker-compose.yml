@@ -8,7 +8,7 @@ services:
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.webmail.rule=Host(`webmail.example`)"
+      - "traefik.http.routers.webmail.rule=Host(`${WEBMAIL_HOST}`)"
       - "traefik.http.routers.webmail.entrypoints=websecure"
       - "traefik.http.routers.webmail.tls.certresolver=letsencrypt"
       - "traefik.http.services.webmail.loadbalancer.server.port=8080"
@@ -21,6 +21,8 @@ services:
       # SQLite file + DataProtection keys persist under ./data on the host
       ConnectionStrings__Default: "Data Source=/app/data/webmail.db"
       DataProtection__KeysPath: "/app/data/dpkeys"
+      # Uploaded shipment images persist under ./data too (survive rebuilds)
+      Shipments__StoragePath: "/app/data/shipments"
       # Secrets come from .env (never commit real values)
       GoogleOAuth__ClientSecret: "${GOOGLE_CLIENT_SECRET}"
       OutlookOAuth__ClientSecret: "${OUTLOOK_CLIENT_SECRET}"
