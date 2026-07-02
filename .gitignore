@@ -20,3 +20,6 @@ obj/
 # Docker env (secrets)
 .env
 
+# Runtime storage (uploaded shipment images, mail caches, etc.)
+src/WebMail/storage/
+

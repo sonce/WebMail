@@ -51,6 +51,14 @@ body {
   min-width: 12rem;
 }
 
+/* Mail filter: keep the native search clear (×) button visible at all times,
+   not only on hover (the WebKit/Edge default). */
+#mailFilter::-webkit-search-cancel-button {
+  opacity: 1;
+  -webkit-appearance: searchfield-cancel-button;
+  appearance: auto;
+}
+
 /* Clickable number badges inside mail subjects (5+ digit runs) */
 .mail-num-badge {
   display: inline-flex;
