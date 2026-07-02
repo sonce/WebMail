@@ -14,7 +14,7 @@ public sealed class BuyerPageModelTests
     public async Task VerifyDoesNotTrustSaleIdFromPublicRequest()
     {
         await using var db = CreateDb();
-        db.Buyers.Add(new Buyer { CardNo = "card-1" });
+        db.Buyers.Add(new Buyer { CardNo = "card-1", Stage = BuyerStage.Sent });
         await db.SaveChangesAsync();
 
         var page = new VerifyModel(db, TestLocalizer.Shared);
@@ -26,7 +26,7 @@ public sealed class BuyerPageModelTests
     }
 
     [Fact]
-    public async Task VerifyAdmitsSentCardAndTransitionsToOpened()
+    public async Task VerifyAdmitsSentCardAndTransitionsToNotSubmitted()
     {
         await using var db = CreateDb();
         db.Buyers.Add(new Buyer { CardNo = "card-sent", Stage = BuyerStage.Sent });
@@ -38,7 +38,7 @@ public sealed class BuyerPageModelTests
 
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("Email", redirect.PageName);
-        Assert.Equal(BuyerStage.Opened,
+        Assert.Equal(BuyerStage.NotSubmitted,
             (await db.Buyers.SingleAsync(x => x.CardNo == "card-sent")).Stage);
     }
 
@@ -61,20 +61,20 @@ public sealed class BuyerPageModelTests
     }
 
     [Fact]
-    public async Task VerifyRevisitsOpenedWithoutAdvancing()
+    public async Task VerifyRevisitsNotSubmittedWithoutAdvancing()
     {
         await using var db = CreateDb();
-        db.Buyers.Add(new Buyer { CardNo = "card-2", Stage = BuyerStage.Opened });
+        db.Buyers.Add(new Buyer { CardNo = "card-2", Stage = BuyerStage.NotSubmitted });
         await db.SaveChangesAsync();
 
         var page = new VerifyModel(db, TestLocalizer.Shared);
 
         var result = await page.OnGetAsync("card-2", null);
 
-        // 已进入(Opened) 回访 → 直接跳状态页，状态不重复推进。
+        // 已进入(NotSubmitted) 回访 → 直接跳状态页，状态不重复推进。
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("Email", redirect.PageName);
-        Assert.Equal(BuyerStage.Opened,
+        Assert.Equal(BuyerStage.NotSubmitted,
             (await db.Buyers.SingleAsync(x => x.CardNo == "card-2")).Stage);
     }
 
