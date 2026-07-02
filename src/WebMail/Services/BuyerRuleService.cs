@@ -42,7 +42,7 @@ public sealed class BuyerRuleService
 
         return buyer.Stage switch
         {
-            BuyerStage.NotSubmitted => BuyerMailAction.Authorize,
+            BuyerStage.Opened => BuyerMailAction.Authorize,
             BuyerStage.Submitted => buyer.ReviewStatus switch
             {
                 ReviewStatus.Pending or ReviewStatus.Rejected => BuyerMailAction.ChangeEmail | BuyerMailAction.ClearAuth,

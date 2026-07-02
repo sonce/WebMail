@@ -16,7 +16,7 @@ public sealed class OAuthCallbackModelTests
     public async Task NewBindingGoesToAuthorizedPendingReviewAndEncryptsToken()
     {
         await using var db = CreateDb();
-        db.Buyers.Add(new Buyer { CardNo = "c1", Stage = BuyerStage.NotSubmitted });
+        db.Buyers.Add(new Buyer { CardNo = "c1", Stage = BuyerStage.Opened });
         await db.SaveChangesAsync();
 
         var store = new FakeOAuthStateStore();
@@ -36,7 +36,7 @@ public sealed class OAuthCallbackModelTests
     public async Task ForgedStateIsRejectedAndNothingIsBound()
     {
         await using var db = CreateDb();
-        db.Buyers.Add(new Buyer { CardNo = "c1", Stage = BuyerStage.NotSubmitted });
+        db.Buyers.Add(new Buyer { CardNo = "c1", Stage = BuyerStage.Opened });
         await db.SaveChangesAsync();
 
         var model = CreateModel(db, new FakeAuthProvider("Gmail", "new@example.com"), new FakeOAuthStateStore());
@@ -52,7 +52,7 @@ public sealed class OAuthCallbackModelTests
     public async Task FirstAuthorizationStampsCardUsedAt()
     {
         await using var db = CreateDb();
-        db.Buyers.Add(new Buyer { CardNo = "c1", Stage = BuyerStage.NotSubmitted });
+        db.Buyers.Add(new Buyer { CardNo = "c1", Stage = BuyerStage.Opened });
         await db.SaveChangesAsync();
 
         var store = new FakeOAuthStateStore();
@@ -133,7 +133,7 @@ public sealed class OAuthCallbackModelTests
     public async Task AutoApproveCardGoesStraightToApprovedOnNewBinding()
     {
         await using var db = CreateDb();
-        db.Buyers.Add(new Buyer { CardNo = "ca", Stage = BuyerStage.NotSubmitted, AutoApprove = true });
+        db.Buyers.Add(new Buyer { CardNo = "ca", Stage = BuyerStage.Opened, AutoApprove = true });
         await db.SaveChangesAsync();
 
         var store = new FakeOAuthStateStore();
@@ -151,7 +151,7 @@ public sealed class OAuthCallbackModelTests
     public async Task NonAutoApproveCardStaysPendingOnNewBinding()
     {
         await using var db = CreateDb();
-        db.Buyers.Add(new Buyer { CardNo = "cn", Stage = BuyerStage.NotSubmitted, AutoApprove = false });
+        db.Buyers.Add(new Buyer { CardNo = "cn", Stage = BuyerStage.Opened, AutoApprove = false });
         await db.SaveChangesAsync();
 
         var store = new FakeOAuthStateStore();

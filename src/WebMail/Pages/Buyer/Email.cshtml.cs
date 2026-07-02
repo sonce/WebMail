@@ -67,7 +67,7 @@ public class EmailModel : PageModel
         {
             _db.EmailAccounts.Remove(account);
         }
-        buyer.Stage = BuyerStage.NotSubmitted;
+        buyer.Stage = BuyerStage.Opened;
         buyer.EmailStatus = EmailAuthorizationStatus.NotAuthorized;
         buyer.ReviewStatus = ReviewStatus.Pending;
         buyer.SupplierStatus = SupplierProcessingStatus.Unprocessed;
@@ -102,7 +102,7 @@ public class EmailModel : PageModel
         // Keep Approved+Completed as the terminal "cleared" state; otherwise reset to a fresh cycle.
         if (!(buyer.ReviewStatus == ReviewStatus.Approved && buyer.SupplierStatus == SupplierProcessingStatus.Completed))
         {
-            buyer.Stage = BuyerStage.NotSubmitted;
+            buyer.Stage = BuyerStage.Opened;
             buyer.ReviewStatus = ReviewStatus.Pending;
             buyer.SupplierStatus = SupplierProcessingStatus.Unprocessed;
         }

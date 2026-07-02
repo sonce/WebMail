@@ -26,9 +26,9 @@ public sealed class BuyerRuleServiceTests
         new() { EmailStatus = email, Stage = stage, ReviewStatus = review, SupplierStatus = supplier };
 
     [Fact]
-    public void Action_NotSubmitted_AllowsAuthorize() =>
+    public void Action_Opened_AllowsAuthorize() =>
         Assert.Equal(BuyerMailAction.Authorize,
-            _service.ResolveBuyerMailAction(B(EmailAuthorizationStatus.NotAuthorized, BuyerStage.NotSubmitted)));
+            _service.ResolveBuyerMailAction(B(EmailAuthorizationStatus.NotAuthorized, BuyerStage.Opened)));
 
     [Theory]
     [InlineData(ReviewStatus.Pending)]
@@ -62,7 +62,7 @@ public sealed class BuyerRuleServiceTests
     }
 
     [Theory]
-    [InlineData(BuyerStage.NotSubmitted, ReviewStatus.Pending, EmailAuthorizationStatus.NotAuthorized, SupplierProcessingStatus.Unprocessed, true)]
+    [InlineData(BuyerStage.Opened, ReviewStatus.Pending, EmailAuthorizationStatus.NotAuthorized, SupplierProcessingStatus.Unprocessed, true)]
     [InlineData(BuyerStage.Submitted, ReviewStatus.Approved, EmailAuthorizationStatus.Authorized, SupplierProcessingStatus.Failed, true)]
     [InlineData(BuyerStage.Submitted, ReviewStatus.Approved, EmailAuthorizationStatus.Authorized, SupplierProcessingStatus.Completed, true)]
     [InlineData(BuyerStage.Submitted, ReviewStatus.Approved, EmailAuthorizationStatus.Authorized, SupplierProcessingStatus.Unprocessed, false)]

@@ -39,7 +39,7 @@ public sealed class BuyerPageModelTests
 
         var reloaded = await db.Buyers.SingleAsync(x => x.Id == buyer.Id);
         Assert.Equal(EmailAuthorizationStatus.NotAuthorized, reloaded.EmailStatus);
-        Assert.Equal(BuyerStage.NotSubmitted, reloaded.Stage);
+        Assert.Equal(BuyerStage.Opened, reloaded.Stage);
         Assert.Equal(ReviewStatus.Pending, reloaded.ReviewStatus);
         Assert.Equal(SupplierProcessingStatus.Unprocessed, reloaded.SupplierStatus);
         Assert.Empty(await db.EmailAccounts.Where(x => x.BuyerId == buyer.Id).ToListAsync());

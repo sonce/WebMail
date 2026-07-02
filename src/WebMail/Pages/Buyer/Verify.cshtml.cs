@@ -39,7 +39,7 @@ public class VerifyModel : PageModel
 
         if (buyer.Stage is BuyerStage.NotSent or BuyerStage.Sent)
         {
-            buyer.Stage = BuyerStage.NotSubmitted;
+            buyer.Stage = BuyerStage.Opened;
         }
 
         await _db.SaveChangesAsync();

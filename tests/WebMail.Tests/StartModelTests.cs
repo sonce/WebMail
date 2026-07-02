@@ -16,7 +16,7 @@ public sealed class StartModelTests
     public async Task RedirectsWithIssuedStateForValidCard()
     {
         await using var db = CreateDb();
-        db.Buyers.Add(new Buyer { CardNo = "c1", Stage = BuyerStage.NotSubmitted });
+        db.Buyers.Add(new Buyer { CardNo = "c1", Stage = BuyerStage.Opened });
         await db.SaveChangesAsync();
 
         var model = CreateModel(db);
