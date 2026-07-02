@@ -1,5 +1,15 @@
 @using WebMail.Domain
 @model IReadOnlyList<Buyer>
+@{
+    // 列表已按状态筛选，同 tab 内所有买家 SupplierStatus 一致；空列表无按钮，回退 Unprocessed 即可。
+    var activeStatus = Model.Count > 0 ? Model[0].SupplierStatus : SupplierProcessingStatus.Unprocessed;
+    // 未处理 tab：标记失败 + 标记完成
+    // 失败 tab：标记未处理 + 标记完成
+    // 完成 tab：标记未处理 + 标记失败
+    var showReset = activeStatus != SupplierProcessingStatus.Unprocessed;
+    var showFailed = activeStatus != SupplierProcessingStatus.Failed;
+    var showCompleted = activeStatus != SupplierProcessingStatus.Completed;
+}
 
 @if (Model.Count == 0)
 {
@@ -47,16 +57,30 @@ else
                     <td data-label="@L["Table.Operations"]" class="td-actions">
                         <div class="d-flex gap-2 flex-wrap">
                             <a class="btn btn-sm btn-primary" asp-page="/Supplier/Mail" asp-route-buyerId="@buyer.Id">@L["Action.ViewMail"]</a>
-                            <form method="post" asp-page-handler="SetStatus">
-                                <input type="hidden" name="buyerId" value="@buyer.Id" />
-                                <input type="hidden" name="status" value="@SupplierProcessingStatus.Failed" />
-                                <button type="submit" class="btn btn-sm btn-outline-danger">@L["Action.MarkFailed"]</button>
-                            </form>
-                            <form method="post" asp-page-handler="SetStatus">
-                                <input type="hidden" name="buyerId" value="@buyer.Id" />
-                                <input type="hidden" name="status" value="@SupplierProcessingStatus.Completed" />
-                                <button type="submit" class="btn btn-sm btn-outline-success">@L["Action.MarkCompleted"]</button>
-                            </form>
+                            @if (showReset)
+                            {
+                                <form method="post" asp-page-handler="SetStatus">
+                                    <input type="hidden" name="buyerId" value="@buyer.Id" />
+                                    <input type="hidden" name="status" value="@SupplierProcessingStatus.Unprocessed" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">@L["Action.MarkUnprocessed"]</button>
+                                </form>
+                            }
+                            @if (showFailed)
+                            {
+                                <form method="post" asp-page-handler="SetStatus">
+                                    <input type="hidden" name="buyerId" value="@buyer.Id" />
+                                    <input type="hidden" name="status" value="@SupplierProcessingStatus.Failed" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">@L["Action.MarkFailed"]</button>
+                                </form>
+                            }
+                            @if (showCompleted)
+                            {
+                                <form method="post" asp-page-handler="SetStatus">
+                                    <input type="hidden" name="buyerId" value="@buyer.Id" />
+                                    <input type="hidden" name="status" value="@SupplierProcessingStatus.Completed" />
+                                    <button type="submit" class="btn btn-sm btn-outline-success">@L["Action.MarkCompleted"]</button>
+                                </form>
+                            }
                         </div>
                     </td>
                 </tr>

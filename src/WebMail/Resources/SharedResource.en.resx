@@ -72,6 +72,7 @@
   <data name="Action.ViewMail" xml:space="preserve"><value>View mail</value></data>
   <data name="Action.MarkFailed" xml:space="preserve"><value>Mark failed</value></data>
   <data name="Action.MarkCompleted" xml:space="preserve"><value>Mark completed</value></data>
+  <data name="Action.MarkUnprocessed" xml:space="preserve"><value>Mark unprocessed</value></data>
   <data name="Action.AuthorizeGmail" xml:space="preserve"><value>Authorize Gmail</value></data>
   <data name="Action.AuthorizeOutlook" xml:space="preserve"><value>Authorize Outlook</value></data>
   <data name="Action.ReAuthorize" xml:space="preserve"><value>Re-authorize</value></data>

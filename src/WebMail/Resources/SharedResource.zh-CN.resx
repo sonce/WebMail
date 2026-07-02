@@ -72,6 +72,7 @@
   <data name="Action.ViewMail" xml:space="preserve"><value>查看邮件</value></data>
   <data name="Action.MarkFailed" xml:space="preserve"><value>标记失败</value></data>
   <data name="Action.MarkCompleted" xml:space="preserve"><value>标记完成</value></data>
+  <data name="Action.MarkUnprocessed" xml:space="preserve"><value>标记未处理</value></data>
   <data name="Action.AuthorizeGmail" xml:space="preserve"><value>授权 Gmail</value></data>
   <data name="Action.AuthorizeOutlook" xml:space="preserve"><value>授权 Outlook</value></data>
   <data name="Action.ReAuthorize" xml:space="preserve"><value>重新授权</value></data>

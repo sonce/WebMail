@@ -46,7 +46,7 @@ public class BuyersModel : PageModel
             return Forbid();
         }
 
-        if (status is not (SupplierProcessingStatus.Failed or SupplierProcessingStatus.Completed))
+        if (status is not (SupplierProcessingStatus.Unprocessed or SupplierProcessingStatus.Failed or SupplierProcessingStatus.Completed))
         {
             Message = _loc["Supplier.InvalidStatus"];
             await LoadBuyersAsync(supplierId);
