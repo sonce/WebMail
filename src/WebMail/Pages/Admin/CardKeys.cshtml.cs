@@ -35,7 +35,7 @@ public class CardKeysModel : PageModel
 
     [BindProperty] public long[] SelectedIds { get; set; } = Array.Empty<long>();
     [BindProperty] public long? SendSaleId { get; set; }
-    [BindProperty] public bool SendAutoApprove { get; set; }
+    [BindProperty] public AutoApproveAction SendAutoApprove { get; set; } = AutoApproveAction.NoChange;
 
     [BindProperty] public int GenerateCount { get; set; } = 1;
     [BindProperty] public long? GenerateSaleId { get; set; }

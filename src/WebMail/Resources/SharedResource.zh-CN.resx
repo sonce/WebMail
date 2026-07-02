@@ -145,6 +145,8 @@
   <data name="CardKey.Generate" xml:space="preserve"><value>生成</value></data>
   <data name="CardKey.AutoApprove" xml:space="preserve"><value>免审核</value></data>
   <data name="Table.AutoApprove" xml:space="preserve"><value>免审核</value></data>
+  <data name="CardKey.AutoApproveNoChange" xml:space="preserve"><value>不修改</value></data>
+  <data name="CardKey.AutoApproveRequireReview" xml:space="preserve"><value>需审核</value></data>
   <data name="CardKey.Count" xml:space="preserve"><value>数量</value></data>
   <data name="CardKey.Sale" xml:space="preserve"><value>所属销售</value></data>
   <data name="CardKey.SaleUnassigned" xml:space="preserve"><value>不指定销售</value></data>

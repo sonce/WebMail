@@ -173,7 +173,7 @@ else
                             @if (notSent)
                             {
                                 <button type="button" class="btn btn-sm btn-outline-primary btn-row-send"
-                                        data-id="@card.Id" data-cardno="@card.CardNo">@L["CardKey.Send"]</button>
+                                        data-id="@card.Id" data-cardno="@card.CardNo" data-autoapprove="@card.AutoApprove.ToString().ToLowerInvariant()">@L["CardKey.Send"]</button>
                             }
                             <form method="post" asp-page-handler="Delete">
                                 <input type="hidden" name="Tab" value="@Model.Tab" />
@@ -211,9 +211,13 @@ else
                                 }
                             </select>
                         </div>
-                        <div class="mb-3 form-check">
-                            <input class="form-check-input" type="checkbox" name="SendAutoApprove" value="true" id="SendAutoApprove" />
-                            <label class="form-check-label" for="SendAutoApprove">@L["CardKey.AutoApprove"]</label>
+                        <div class="mb-3">
+                            <label class="form-label" for="SendAutoApprove">@L["CardKey.AutoApprove"]</label>
+                            <select class="form-select" id="SendAutoApprove" name="SendAutoApprove">
+                                <option value="NoChange">@L["CardKey.AutoApproveNoChange"]</option>
+                                <option value="AutoApprove">@L["CardKey.AutoApprove"]</option>
+                                <option value="RequireReview">@L["CardKey.AutoApproveRequireReview"]</option>
+                            </select>
                         </div>
                         <div id="send-card-list" class="small text-muted mb-2"></div>
                         <div id="send-ids"></div>
@@ -263,6 +267,15 @@ else
                     cards.map(function (c) { return '<div>' + c.cardNo + '</div>'; }).join('');
                 document.getElementById('send-ids').innerHTML =
                     cards.map(function (c) { return '<input type="hidden" name="SelectedIds" value="' + c.id + '" />'; }).join('');
+
+                // 批量默认「不修改」；单条预选该卡当前免审核值。
+                var autoApproveSelect = document.getElementById('SendAutoApprove');
+                if (cards.length === 1 && cards[0].autoApprove !== undefined) {
+                    autoApproveSelect.value = cards[0].autoApprove ? 'AutoApprove' : 'RequireReview';
+                } else {
+                    autoApproveSelect.value = 'NoChange';
+                }
+
                 bsModal.show();
             }
 
@@ -279,7 +292,11 @@ else
 
             document.querySelectorAll('.btn-row-send').forEach(function (btn) {
                 btn.addEventListener('click', function () {
-                    openSendModal([{ id: btn.getAttribute('data-id'), cardNo: btn.getAttribute('data-cardno') }]);
+                    openSendModal([{
+                        id: btn.getAttribute('data-id'),
+                        cardNo: btn.getAttribute('data-cardno'),
+                        autoApprove: btn.getAttribute('data-autoapprove') === 'true'
+                    }]);
                 });
             });
 

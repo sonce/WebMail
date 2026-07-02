@@ -145,6 +145,8 @@
   <data name="CardKey.Generate" xml:space="preserve"><value>Generate</value></data>
   <data name="CardKey.AutoApprove" xml:space="preserve"><value>Auto-approve</value></data>
   <data name="Table.AutoApprove" xml:space="preserve"><value>Auto-approve</value></data>
+  <data name="CardKey.AutoApproveNoChange" xml:space="preserve"><value>No change</value></data>
+  <data name="CardKey.AutoApproveRequireReview" xml:space="preserve"><value>Require review</value></data>
   <data name="CardKey.Count" xml:space="preserve"><value>Count</value></data>
   <data name="CardKey.Sale" xml:space="preserve"><value>Sales</value></data>
   <data name="CardKey.SaleUnassigned" xml:space="preserve"><value>No sales assigned</value></data>
