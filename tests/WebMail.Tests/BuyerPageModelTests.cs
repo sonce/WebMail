@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using WebMail.Data;
 using WebMail.Domain;
@@ -21,6 +23,77 @@ public sealed class BuyerPageModelTests
 
         var buyer = await db.Buyers.SingleAsync(x => x.CardNo == "card-1");
         Assert.Null(buyer.SaleId);
+    }
+
+    [Fact]
+    public async Task VerifyAdmitsSentCardAndTransitionsToOpened()
+    {
+        await using var db = CreateDb();
+        db.Buyers.Add(new Buyer { CardNo = "card-sent", Stage = BuyerStage.Sent });
+        await db.SaveChangesAsync();
+
+        var page = new VerifyModel(db, TestLocalizer.Shared);
+
+        var result = await page.OnGetAsync("card-sent", null);
+
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("Email", redirect.PageName);
+        Assert.Equal(BuyerStage.Opened,
+            (await db.Buyers.SingleAsync(x => x.CardNo == "card-sent")).Stage);
+    }
+
+    [Fact]
+    public async Task VerifyBlocksUnsentCard()
+    {
+        await using var db = CreateDb();
+        db.Buyers.Add(new Buyer { CardNo = "card-unsent", Stage = BuyerStage.NotSent });
+        await db.SaveChangesAsync();
+
+        var page = new VerifyModel(db, TestLocalizer.Shared);
+
+        var result = await page.OnGetAsync("card-unsent", null);
+
+        // 卡密未发送（Stage=NotSent）→ 链接不可用，提示「链接无效或已失效」。
+        Assert.IsType<PageResult>(result);
+        Assert.Equal("Buyer.LinkInvalidOrExpired", page.ErrorMessage);
+        Assert.Equal(BuyerStage.NotSent,
+            (await db.Buyers.SingleAsync(x => x.CardNo == "card-unsent")).Stage);
+    }
+
+    [Fact]
+    public async Task VerifyRevisitsOpenedWithoutAdvancing()
+    {
+        await using var db = CreateDb();
+        db.Buyers.Add(new Buyer { CardNo = "card-2", Stage = BuyerStage.Opened });
+        await db.SaveChangesAsync();
+
+        var page = new VerifyModel(db, TestLocalizer.Shared);
+
+        var result = await page.OnGetAsync("card-2", null);
+
+        // 已进入(Opened) 回访 → 直接跳状态页，状态不重复推进。
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("Email", redirect.PageName);
+        Assert.Equal(BuyerStage.Opened,
+            (await db.Buyers.SingleAsync(x => x.CardNo == "card-2")).Stage);
+    }
+
+    [Fact]
+    public async Task VerifyRevisitsSubmittedWithoutAdvancing()
+    {
+        await using var db = CreateDb();
+        db.Buyers.Add(new Buyer { CardNo = "card-submitted", Stage = BuyerStage.Submitted });
+        await db.SaveChangesAsync();
+
+        var page = new VerifyModel(db, TestLocalizer.Shared);
+
+        var result = await page.OnGetAsync("card-submitted", null);
+
+        // 已授权(Submitted) 回访 → 跳状态页查看 / 操作，状态不变。
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("Email", redirect.PageName);
+        Assert.Equal(BuyerStage.Submitted,
+            (await db.Buyers.SingleAsync(x => x.CardNo == "card-submitted")).Stage);
     }
 
     [Fact]

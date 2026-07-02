@@ -76,7 +76,7 @@ public enum SupplierProcessingStatus { Unprocessed = 1, Failed = 2, Completed = 
 | 生成卡密（不选销售） | `CardKeyService.GenerateAsync` | `Stage=NotSent`, `ReviewStatus=Pending`, `EmailStatus=NotAuthorized`, `SupplierStatus=Unprocessed`, `AutoApprove=<勾选值>` |
 | 生成卡密（选销售） | `CardKeyService.GenerateAsync` | 同上但 `Stage=Sent` |
 | 发送给销售 | `CardKeyService`（发送逻辑，原回写 `CardSendStatus`） | `Stage=Sent`（仅当当前为 `NotSent`） |
-| 买家录入卡密 | `Verify.OnGetAsync` | `Stage` `NotSent`/`Sent` → `NotSubmitted`（替代原 `CardStatus Unused→Entered`） |
+| 买家录入卡密 | `Verify.OnGetAsync` | 卡密链接一次性入口：`NotSent`→提示「链接无效或已失效」；`Sent`→`Stage=Opened` 并进入状态页；`Opened`/`Submitted`→回访，直接进入状态页、不重复推进状态 |
 | 买家完成邮箱授权（首次/换绑新邮箱） | `OAuth/Callback` | `Stage→Submitted`, `EmailStatus=Authorized`, **`ReviewStatus = AutoApprove ? Approved : Pending`**, `CardUsedAt ??= now` |
 | 管理员审核 | `Admin/Buyers` | `ReviewStatus` `Pending → Approved/Rejected`（仅当 `Stage==Submitted && ReviewStatus==Pending`） |
 | 供应商标记 | `Supplier/Buyers` | `SupplierStatus → Failed/Completed`（仅当 `ReviewStatus==Approved && EmailStatus==Authorized`，且分配给该供应商） |

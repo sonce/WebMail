@@ -37,12 +37,21 @@ public class VerifyModel : PageModel
             return Page();
         }
 
-        if (buyer.Stage is BuyerStage.NotSent or BuyerStage.Sent)
+        // 卡密链接入口：
+        // - NotSent（未发送给销售）→ 链接不可用，提示失效。
+        // - Sent（首次进入）→ 转 Opened 并进入状态页。
+        // - Opened / Submitted（已进入）→ 直接回访状态页，不重复推进状态。
+        if (buyer.Stage == BuyerStage.NotSent)
         {
-            buyer.Stage = BuyerStage.Opened;
+            ErrorMessage = _loc["Buyer.LinkInvalidOrExpired"];
+            return Page();
         }
 
-        await _db.SaveChangesAsync();
+        if (buyer.Stage == BuyerStage.Sent)
+        {
+            buyer.Stage = BuyerStage.Opened;
+            await _db.SaveChangesAsync();
+        }
 
         return RedirectToPage("Email", new { card });
     }
