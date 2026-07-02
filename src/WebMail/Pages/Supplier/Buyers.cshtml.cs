@@ -80,12 +80,16 @@ public class BuyersModel : PageModel
 
     private async Task LoadBuyersAsync(long supplierId)
     {
-        // 供应商列表已筛为「邮箱已授权」的买家，左联 EmailAccounts 取授权邮箱用于列表展示。
+        // 未处理(待办)买家要求邮箱已授权（供应商需读邮件处理）；
+        // 失败/完成 的买家即使后续邮箱解除了授权也仍保留在列表中。
+        // 左联 EmailAccounts 取授权邮箱用于列表展示。
         Buyers = await (from a in _db.BuyerSupplierAssignments
                         where a.SupplierId == supplierId
                             && !a.Buyer.IsDeleted
                             && a.Buyer.ReviewStatus == ReviewStatus.Approved
-                            && a.Buyer.EmailStatus == EmailAuthorizationStatus.Authorized
+                            && (a.Buyer.EmailStatus == EmailAuthorizationStatus.Authorized
+                                || a.Buyer.SupplierStatus == SupplierProcessingStatus.Failed
+                                || a.Buyer.SupplierStatus == SupplierProcessingStatus.Completed)
                         join e in _db.EmailAccounts on a.BuyerId equals e.BuyerId into eg
                         from e in eg.DefaultIfEmpty()
                         select new BuyerRowView(a.Buyer, e != null ? e.Email : null))

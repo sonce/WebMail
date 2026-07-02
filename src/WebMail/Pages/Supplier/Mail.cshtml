@@ -34,16 +34,22 @@
         {
             <a class="btn btn-secondary btn-sm" asp-page="Buyers">@L["Common.BackToList"]</a>
         }
-        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addShipmentModal">
-            @L["Action.AddShipment"]
-        </button>
+        @if (Model.IsEmailReady)
+        {
+            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addShipmentModal">
+                @L["Action.AddShipment"]
+            </button>
+        }
     </div>
-    <div class="d-flex align-items-center gap-2">
-        <label class="form-check-label mb-0">
-            <input type="checkbox" id="autoPollToggle" checked /> @L["Mail.AutoPoll"]
-        </label>
-        <button type="button" class="btn btn-secondary btn-sm" id="refreshBtn">@L["Mail.Refresh"]</button>
-    </div>
+    @if (Model.IsEmailReady)
+    {
+        <div class="d-flex align-items-center gap-2">
+            <label class="form-check-label mb-0">
+                <input type="checkbox" id="autoPollToggle" checked /> @L["Mail.AutoPoll"]
+            </label>
+            <button type="button" class="btn btn-secondary btn-sm" id="refreshBtn">@L["Mail.Refresh"]</button>
+        </div>
+    }
 </div>
 
 @if (!string.IsNullOrEmpty(Model.Message))
@@ -53,12 +59,22 @@
 
 <div id="mailAlert" class="alert alert-warning d-none"></div>
 
-<div class="mb-2">
-    <input type="search" id="mailFilter" class="form-control form-control-sm" placeholder="@L["Mail.FilterPlaceholder"]" value="transactions@notifications.timon.cards" />
-</div>
+@if (Model.IsEmailReady)
+{
+    <div class="mb-2">
+        <input type="search" id="mailFilter" class="form-control form-control-sm" placeholder="@L["Mail.FilterPlaceholder"]" value="transactions@notifications.timon.cards" />
+    </div>
+}
+else
+{
+    <div class="alert alert-warning">@L["Mail.NotAuthorized"]</div>
+}
 
 <div id="mailContent">
-    <p class="text-muted">@L["Mail.Loading"]</p>
+    @if (Model.IsEmailReady)
+    {
+        <p class="text-muted">@L["Mail.Loading"]</p>
+    }
 </div>
 
 <partial name="_ShipmentSection" model="Model" />
@@ -67,6 +83,7 @@
 <script>
     (function () {
         var buyerId = @Model.BuyerId;
+        var emailReady = @Model.IsEmailReady.ToString().ToLowerInvariant();
         var noMailText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Common.NoMail"].Value));
         var junkText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Mail.Junk"].Value));
         var refreshFailedText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Mail.RefreshFailed"].Value));
@@ -88,7 +105,7 @@
             var msgs = data.messages || [];
 
             if (data.stale || data.error) {
-                alert.textContent = refreshFailedText;
+                alert.textContent = data.error || refreshFailedText;
                 alert.classList.remove('d-none');
             } else {
                 alert.classList.add('d-none');
@@ -231,11 +248,13 @@
         function startTimer() { stopTimer(); timer = setInterval(function () { fetchMail(false); }, 15000); }
         function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
 
-        refreshBtn.addEventListener('click', function () { fetchMail(true); });
-        document.getElementById('autoPollToggle').addEventListener('change', function () {
-            if (this.checked) { startTimer(); } else { stopTimer(); }
-        });
-        document.getElementById('mailFilter').addEventListener('input', applyFilter);
+        if (emailReady) {
+            refreshBtn.addEventListener('click', function () { fetchMail(true); });
+            document.getElementById('autoPollToggle').addEventListener('change', function () {
+                if (this.checked) { startTimer(); } else { stopTimer(); }
+            });
+            document.getElementById('mailFilter').addEventListener('input', applyFilter);
+        }
         // Copy the number when its badge is clicked/activated (text or icon both
         // trigger it; delegated so it survives re-renders).
         function copyNumber(badge) {
@@ -297,10 +316,11 @@
             });
         }
 
-        // Fetch mail immediately so the page fills in right after load; the timer
-        // (when auto-poll is on) keeps it fresh thereafter.
-        fetchMail(false);
-        if (document.getElementById('autoPollToggle').checked) { startTimer(); }
+        // 未授权时不获取邮件；仅在邮箱就绪时发起首次拉取并启动自动轮询。
+        if (emailReady) {
+            fetchMail(false);
+            if (document.getElementById('autoPollToggle').checked) { startTimer(); }
+        }
     })();
 </script>
 }

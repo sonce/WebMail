@@ -41,15 +41,22 @@ else
                 <tr>
                     <td data-label="@L["Table.AccountEmail"]" class="td-cardno">
                         <div class="cardno-cell">
-                            <span class="cardno-text" title="@accountEmail">@accountEmail</span>
                             @if (hasEmail)
                             {
-                                <button type="button" class="btn btn-sm btn-link p-0 copy-email"
+                                <button type="button" class="btn btn-link p-0 copy-email d-inline-flex align-items-center gap-1"
                                         data-email="@row.Email" title="@L["Action.CopyEmail"]" aria-label="@L["Action.CopyEmail"]">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <span class="cardno-text" title="@accountEmail">@accountEmail</span>
+                                    <svg class="copy-email-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                         <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2zm13 2.383-4.708 2.825L15 11.105V5.383zM1 5.383v5.722l4.708-2.897L1 5.383zM2.242 13H13.758l-3.879-2.39-.79.474a.5.5 0 0 1-.516 0l-.79-.474L2.242 13z"/>
                                     </svg>
+                                    <svg class="copy-email-check d-none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#198754" viewBox="0 0 16 16">
+                                        <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
+                                    </svg>
                                 </button>
+                            }
+                            else
+                            {
+                                <span class="cardno-text" title="@accountEmail">@accountEmail</span>
                             }
                         </div>
                     </td>

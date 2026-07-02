@@ -3,9 +3,12 @@
 
 <div class="d-flex align-items-center gap-2 mt-4 mb-2">
     <h2 class="h5 mb-0">@L["Shipment.SectionTitle"]</h2>
-    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addShipmentModal">
-        @L["Action.AddShipment"]
-    </button>
+    @if (Model.IsEmailReady)
+    {
+        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addShipmentModal">
+            @L["Action.AddShipment"]
+        </button>
+    }
 </div>
 
 @if (Model.Shipments.Count == 0)

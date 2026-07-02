@@ -36,10 +36,16 @@ body {
   vertical-align: middle;
 }
 
-.cardno-cell .copy-link,
-.cardno-cell .copy-email {
+.cardno-cell .copy-link {
   flex: 0 0 auto;
   line-height: 1;
+}
+
+/* 邮箱地址作为可点击文本按钮：外观如普通文本，点击复制邮箱 */
+.cardno-cell .copy-email {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .cardno-cell .copy-link.copied,

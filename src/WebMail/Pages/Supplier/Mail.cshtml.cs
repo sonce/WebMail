@@ -33,6 +33,8 @@ public class MailModel : PageModel
         _loc = loc;
     }
 
+    // 买家是否「就绪」：审核通过且邮箱已授权。就绪才允许读邮件与操作发货；
+    // 未就绪（如邮箱已解绑的失败/完成买家）仍可进入查看邮件页，只是不获取邮件。
     private Task<bool> IsBuyerReadyAsync(long buyerId) => _db.Buyers.AnyAsync(b => b.Id == buyerId
         && !b.IsDeleted
         && b.ReviewStatus == ReviewStatus.Approved
@@ -40,6 +42,7 @@ public class MailModel : PageModel
 
     public long BuyerId { get; private set; }
     public string? BuyerEmail { get; private set; }
+    public bool IsEmailReady { get; private set; }
     public IReadOnlyList<Domain.MailMessageView> Messages { get; private set; } = Array.Empty<Domain.MailMessageView>();
     public IReadOnlyList<Shipment> Shipments { get; private set; } = Array.Empty<Shipment>();
     public string? Message { get; private set; }
@@ -51,13 +54,9 @@ public class MailModel : PageModel
             return Forbid();
         }
 
-        // 供应商额外要求买家审核通过且邮箱已授权（与原行为一致）；管理员不受限。
-        if (!User.IsInRole("Administrator") && !await IsBuyerReadyAsync(buyerId))
-        {
-            return Forbid();
-        }
-
         BuyerId = buyerId;
+        // 管理员不受就绪限制；供应商要求买家已就绪（审核通过 + 邮箱已授权）。
+        IsEmailReady = User.IsInRole("Administrator") || await IsBuyerReadyAsync(buyerId);
         BuyerEmail = await _db.EmailAccounts
             .Where(a => a.BuyerId == buyerId)
             .Select(a => a.Email)
@@ -81,9 +80,12 @@ public class MailModel : PageModel
         {
             return Forbid();
         }
-        if (!User.IsInRole("Administrator") && !await IsBuyerReadyAsync(buyerId))
+
+        // 未授权（邮箱未就绪）：不获取邮件，直接返回提示信息。
+        var ready = User.IsInRole("Administrator") || await IsBuyerReadyAsync(buyerId);
+        if (!ready)
         {
-            return Forbid();
+            return new JsonResult(new MailPollResponse(Array.Empty<Domain.MailMessageView>(), Stale: false, Error: _loc["Mail.NotAuthorized"]));
         }
 
         var cached = await _cache.GetOrFetchAsync(buyerId, force, HttpContext.RequestAborted);
