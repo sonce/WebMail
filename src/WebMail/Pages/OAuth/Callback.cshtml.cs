@@ -14,6 +14,7 @@ namespace WebMail.Pages.OAuth;
 public sealed class CallbackModel(
     WebMailDbContext db,
     BuyerRuleService ruleService,
+    BuyerReviewService reviewService,
     IEmailProviderResolver providers,
     IStringLocalizer<SharedResource> loc,
     IOAuthStateStore stateStore,
@@ -99,7 +100,15 @@ public sealed class CallbackModel(
         if (isNewOrChangedAccount)
         {
             buyer.EmailStatus = EmailAuthorizationStatus.Authorized;
-            buyer.ReviewStatus = buyer.AutoApprove ? ReviewStatus.Approved : ReviewStatus.Pending;
+            if (buyer.AutoApprove)
+            {
+                await reviewService.ApplyReviewAsync(buyer, ReviewStatus.Approved,
+                    adminId: null, writeAuditLog: false, cancellationToken);
+            }
+            else
+            {
+                buyer.ReviewStatus = ReviewStatus.Pending;
+            }
         }
         else if (buyer.EmailStatus == EmailAuthorizationStatus.Abnormal)
         {

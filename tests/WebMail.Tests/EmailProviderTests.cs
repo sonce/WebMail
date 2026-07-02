@@ -35,12 +35,12 @@ public sealed class EmailProviderTests
         {
             ["OutlookOAuth:ClientId"] = "outlook-client",
             ["OutlookOAuth:ClientSecret"] = "secret",
-            ["WebMail:PublicBaseUrl"] = "https://timon.itwoow.cn/"
+            ["WebMail:PublicBaseUrl"] = "https://webmail.example/"
         }), new HttpClient(handler));
 
         await provider.FetchMessagesAsync("refresh-token", Array.Empty<string>(), null, CancellationToken.None);
 
-        Assert.Equal("https://timon.itwoow.cn/oauth/callback", handler.RefreshRedirectUri);
+        Assert.Equal("https://webmail.example/oauth/callback", handler.RefreshRedirectUri);
     }
 
     [Fact]

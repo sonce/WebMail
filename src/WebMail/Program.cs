@@ -24,6 +24,7 @@ builder.Services.AddDbContext<WebMailDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddScoped<BuyerRuleService>();
+builder.Services.AddScoped<BuyerReviewService>();
 builder.Services.AddScoped<UserAdminService>();
 builder.Services.AddScoped<CardKeyService>();
 builder.Services.AddSingleton<CardGenerationService>();

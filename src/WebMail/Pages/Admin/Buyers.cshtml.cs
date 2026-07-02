@@ -7,6 +7,7 @@ using Microsoft.Extensions.Localization;
 using WebMail;
 using WebMail.Data;
 using WebMail.Domain;
+using WebMail.Services;
 
 namespace WebMail.Pages.Admin;
 
@@ -14,11 +15,13 @@ namespace WebMail.Pages.Admin;
 public class BuyersModel : PageModel
 {
     private readonly WebMailDbContext _db;
+    private readonly BuyerReviewService _reviewService;
     private readonly IStringLocalizer<SharedResource> _loc;
 
-    public BuyersModel(WebMailDbContext db, IStringLocalizer<SharedResource> loc)
+    public BuyersModel(WebMailDbContext db, BuyerReviewService reviewService, IStringLocalizer<SharedResource> loc)
     {
         _db = db;
+        _reviewService = reviewService;
         _loc = loc;
     }
 
@@ -127,14 +130,9 @@ public class BuyersModel : PageModel
         var buyer = await _db.Buyers.FirstOrDefaultAsync(b => b.Id == id && !b.IsDeleted);
         if (buyer is not null && buyer.Stage == BuyerStage.Submitted && buyer.ReviewStatus == ReviewStatus.Pending)
         {
-            buyer.ReviewStatus = decision;
             long.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var adminId);
-            _db.AuditLogs.Add(new AuditLog
-            {
-                Action = "AdminReview",
-                UserId = adminId == 0 ? null : adminId,
-                Details = $"buyer={id};decision={decision}"
-            });
+            await _reviewService.ApplyReviewAsync(buyer, decision,
+                adminId: adminId == 0 ? null : adminId, writeAuditLog: true, CancellationToken.None);
             await _db.SaveChangesAsync();
             Message = _loc["Admin.Buyers.Reviewed"];
         }
