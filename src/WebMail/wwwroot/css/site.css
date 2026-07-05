@@ -244,3 +244,18 @@ body {
     width: 100%;
   }
 }
+
+.mail-detail-frame {
+  width: 100%;
+  min-height: 50vh;
+  border: 1px solid #dee2e6;
+  border-radius: .25rem;
+  background: #fff;
+}
+
+.mail-detail-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+}

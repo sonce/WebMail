@@ -202,4 +202,8 @@
   <data name="Mail.FilterPlaceholder" xml:space="preserve"><value>筛选发件人/主题…</value></data>
   <data name="Mail.Fetching" xml:space="preserve"><value>获取中…</value></data>
   <data name="Mail.CopyNumberHint" xml:space="preserve"><value>点击复制</value></data>
+  <data name="Table.Actions" xml:space="preserve"><value>操作</value></data>
+  <data name="Action.View" xml:space="preserve"><value>查看</value></data>
+  <data name="Mail.ContentTitle" xml:space="preserve"><value>邮件内容</value></data>
+  <data name="Mail.EmptyBody" xml:space="preserve"><value>该邮件没有可显示的正文。</value></data>
 </root>

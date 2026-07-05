@@ -5,4 +5,6 @@ public sealed record MailMessageView(
     string Sender,
     string Subject,
     DateTimeOffset SentAt,
-    MailFolder Folder);
+    MailFolder Folder,
+    string? TextBody = null,
+    string? HtmlBody = null);

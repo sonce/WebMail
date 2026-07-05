@@ -37,7 +37,7 @@ public sealed class MailCacheServiceTests
         var messages = new[]
         {
             new ProviderMessage("id-1", "t", "sender@x.com", "r", "Hello",
-                sentAt, "body", null, null, MailFolder.Junk)
+                sentAt, "body", "<p>body</p>", null, MailFolder.Junk)
         };
 
         var result = MailCacheService.ProjectLatest(messages, limit: 10);
@@ -48,6 +48,8 @@ public sealed class MailCacheServiceTests
         Assert.Equal("Hello", view.Subject);
         Assert.Equal(sentAt, view.SentAt);
         Assert.Equal(MailFolder.Junk, view.Folder);
+        Assert.Equal("body", view.TextBody);
+        Assert.Equal("<p>body</p>", view.HtmlBody);
     }
 
     [Fact]

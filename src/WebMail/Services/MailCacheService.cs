@@ -112,7 +112,9 @@ public sealed partial class MailCacheService(
                 m.Sender,
                 m.Subject,
                 m.SentAt,
-                m.Folder))
+                m.Folder,
+                m.TextBody,
+                m.HtmlBody))
             .ToList();
 
     private sealed record CacheEntry(IReadOnlyList<MailMessageView> Messages, DateTimeOffset FetchedAt);

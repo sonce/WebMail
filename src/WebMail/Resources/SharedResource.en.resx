@@ -202,4 +202,8 @@
   <data name="Mail.FilterPlaceholder" xml:space="preserve"><value>Filter sender/subject…</value></data>
   <data name="Mail.Fetching" xml:space="preserve"><value>Fetching…</value></data>
   <data name="Mail.CopyNumberHint" xml:space="preserve"><value>Click to copy</value></data>
+  <data name="Table.Actions" xml:space="preserve"><value>Actions</value></data>
+  <data name="Action.View" xml:space="preserve"><value>View</value></data>
+  <data name="Mail.ContentTitle" xml:space="preserve"><value>Mail content</value></data>
+  <data name="Mail.EmptyBody" xml:space="preserve"><value>This message has no displayable body.</value></data>
 </root>

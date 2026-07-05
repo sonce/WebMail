@@ -77,6 +77,30 @@ else
     }
 </div>
 
+<div class="modal fade" id="mailDetailModal" tabindex="-1" aria-labelledby="mailDetailTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="mailDetailTitle">@L["Mail.ContentTitle"]</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <dl class="row mb-3">
+                    <dt class="col-sm-2">@L["Table.Sender"]</dt>
+                    <dd class="col-sm-10" id="mailDetailSender"></dd>
+                    <dt class="col-sm-2">@L["Table.Subject"]</dt>
+                    <dd class="col-sm-10" id="mailDetailSubject"></dd>
+                    <dt class="col-sm-2">@L["Table.SentAt"]</dt>
+                    <dd class="col-sm-10" id="mailDetailSentAt"></dd>
+                </dl>
+                <iframe id="mailDetailHtml" class="mail-detail-frame d-none" sandbox="" title="@L["Mail.ContentTitle"]"></iframe>
+                <pre id="mailDetailText" class="mail-detail-text d-none"></pre>
+                <p id="mailDetailEmpty" class="text-muted d-none">@L["Mail.EmptyBody"]</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <partial name="_ShipmentSection" model="Model" />
 
 @section Scripts {
@@ -91,6 +115,8 @@ else
         var senderText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Table.Sender"].Value));
         var subjectText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Table.Subject"].Value));
         var sentAtText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Table.SentAt"].Value));
+        var actionsText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Table.Actions"].Value));
+        var viewText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Action.View"].Value));
         var refreshBtn = document.getElementById('refreshBtn');
         var refreshLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Mail.Refresh"].Value));
         var fetchingLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Mail.Fetching"].Value));
@@ -98,11 +124,16 @@ else
         var pollUrl = '?handler=poll&buyerId=' + buyerId;
         var timer = null;
         var fetching = false;
+        var currentMessages = {};
 
         function render(data) {
             var content = document.getElementById('mailContent');
             var alert = document.getElementById('mailAlert');
             var msgs = data.messages || [];
+            currentMessages = {};
+            for (var messageIndex = 0; messageIndex < msgs.length; messageIndex++) {
+                currentMessages[msgs[messageIndex].id] = msgs[messageIndex];
+            }
 
             if (data.stale || data.error) {
                 alert.textContent = data.error || refreshFailedText;
@@ -123,11 +154,12 @@ else
                     + '<td data-label="' + senderText + '" data-filter="' + escapeAttr(m.sender) + '">' + senderLink(m.sender) + '</td>'
                     + '<td class="td-subject" data-label="' + subjectText + '">' + highlightNumbers(m.subject) + '</td>'
                     + '<td data-label="' + sentAtText + '">' + formatSentAt(m.sentAt) + '</td>'
+                    + '<td class="td-actions" data-label="' + actionsText + '"><button type="button" class="btn btn-outline-primary btn-sm view-mail-btn" data-message-id="' + escapeAttr(m.id) + '">' + viewText + '</button></td>'
                     + '</tr>';
             }).join('');
 
             content.innerHTML = '<div class="table-responsive"><table class="table table-striped table-cards">'
-                + '<thead><tr><th>' + sourceText + '</th><th>' + senderText + '</th><th>' + subjectText + '</th><th>' + sentAtText + '</th></tr></thead>'
+                + '<thead><tr><th>' + sourceText + '</th><th>' + senderText + '</th><th>' + subjectText + '</th><th>' + sentAtText + '</th><th>' + actionsText + '</th></tr></thead>'
                 + '<tbody id="mailBody">' + rows + '</tbody></table></div>';
             applyFilter();
         }
@@ -276,10 +308,43 @@ else
             }
         }
         document.getElementById('mailContent').addEventListener('click', function (e) {
+            var viewButton = e.target.closest('.view-mail-btn');
+            if (viewButton) {
+                showMailDetail(currentMessages[viewButton.getAttribute('data-message-id')]);
+                return;
+            }
             var badge = e.target.closest('.mail-num-badge');
             if (!badge) { return; }
             copyNumber(badge);
         });
+
+        function showMailDetail(message) {
+            if (!message) { return; }
+            document.getElementById('mailDetailSender').textContent = message.sender || '';
+            document.getElementById('mailDetailSubject').textContent = message.subject || '';
+            document.getElementById('mailDetailSentAt').textContent = formatSentAt(message.sentAt);
+
+            var htmlFrame = document.getElementById('mailDetailHtml');
+            var textBody = document.getElementById('mailDetailText');
+            var emptyBody = document.getElementById('mailDetailEmpty');
+            htmlFrame.classList.add('d-none');
+            textBody.classList.add('d-none');
+            emptyBody.classList.add('d-none');
+            htmlFrame.removeAttribute('srcdoc');
+            textBody.textContent = '';
+
+            if (message.htmlBody) {
+                htmlFrame.srcdoc = message.htmlBody;
+                htmlFrame.classList.remove('d-none');
+            } else if (message.textBody) {
+                textBody.textContent = message.textBody;
+                textBody.classList.remove('d-none');
+            } else {
+                emptyBody.classList.remove('d-none');
+            }
+
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('mailDetailModal')).show();
+        }
         document.getElementById('mailContent').addEventListener('keydown', function (e) {
             if (e.key !== 'Enter' && e.key !== ' ') { return; }
             var badge = e.target.closest('.mail-num-badge');
