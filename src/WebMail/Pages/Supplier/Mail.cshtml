@@ -93,7 +93,9 @@ else
                     <dt class="col-sm-2">@L["Table.SentAt"]</dt>
                     <dd class="col-sm-10" id="mailDetailSentAt"></dd>
                 </dl>
-                <iframe id="mailDetailHtml" class="mail-detail-frame d-none" sandbox="" title="@L["Mail.ContentTitle"]"></iframe>
+                <iframe id="mailDetailHtml" class="mail-detail-frame d-none"
+                        sandbox="allow-popups allow-popups-to-escape-sandbox"
+                        title="@L["Mail.ContentTitle"]"></iframe>
                 <pre id="mailDetailText" class="mail-detail-text d-none"></pre>
                 <p id="mailDetailEmpty" class="text-muted d-none">@L["Mail.EmptyBody"]</p>
             </div>
@@ -334,7 +336,7 @@ else
             textBody.textContent = '';
 
             if (message.htmlBody) {
-                htmlFrame.srcdoc = message.htmlBody;
+                htmlFrame.srcdoc = prepareHtmlBody(message.htmlBody);
                 htmlFrame.classList.remove('d-none');
             } else if (message.textBody) {
                 textBody.textContent = message.textBody;
@@ -344,6 +346,14 @@ else
             }
 
             bootstrap.Modal.getOrCreateInstance(document.getElementById('mailDetailModal')).show();
+        }
+
+        function prepareHtmlBody(html) {
+            var documentNode = new DOMParser().parseFromString(html, 'text/html');
+            var base = documentNode.createElement('base');
+            base.target = '_blank';
+            documentNode.head.prepend(base);
+            return documentNode.documentElement.outerHTML;
         }
         document.getElementById('mailContent').addEventListener('keydown', function (e) {
             if (e.key !== 'Enter' && e.key !== ' ') { return; }
