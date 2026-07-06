@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using WebMail.Data;
 using WebMail.Domain;
 using WebMail.Pages.Buyer;
@@ -38,7 +39,7 @@ public sealed class BuyerPageModelTests
 
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("Email", redirect.PageName);
-        Assert.Equal(BuyerStage.NotSubmitted,
+        Assert.Equal(BuyerStage.Opened,
             (await db.Buyers.SingleAsync(x => x.CardNo == "card-sent")).Stage);
     }
 
@@ -64,7 +65,7 @@ public sealed class BuyerPageModelTests
     public async Task VerifyRevisitsNotSubmittedWithoutAdvancing()
     {
         await using var db = CreateDb();
-        db.Buyers.Add(new Buyer { CardNo = "card-2", Stage = BuyerStage.NotSubmitted });
+        db.Buyers.Add(new Buyer { CardNo = "card-2", Stage = BuyerStage.Opened });
         await db.SaveChangesAsync();
 
         var page = new VerifyModel(db, TestLocalizer.Shared);
@@ -74,7 +75,7 @@ public sealed class BuyerPageModelTests
         // 已进入(NotSubmitted) 回访 → 直接跳状态页，状态不重复推进。
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("Email", redirect.PageName);
-        Assert.Equal(BuyerStage.NotSubmitted,
+        Assert.Equal(BuyerStage.Opened,
             (await db.Buyers.SingleAsync(x => x.CardNo == "card-2")).Stage);
     }
 
@@ -107,7 +108,7 @@ public sealed class BuyerPageModelTests
         db.EmailAccounts.Add(account);
         await db.SaveChangesAsync();
 
-        var page = new EmailModel(db, new BuyerRuleService(), TestLocalizer.Shared);
+        var page = new EmailModel(db, new BuyerRuleService(), TestLocalizer.Shared, new ConfigurationBuilder().Build());
         await page.OnPostChangeEmailAsync("card-3");
 
         var reloaded = await db.Buyers.SingleAsync(x => x.Id == buyer.Id);
@@ -128,7 +129,7 @@ public sealed class BuyerPageModelTests
         db.EmailAccounts.Add(new EmailAccount { BuyerId = buyer.Id, Email = "buyer@example.com", Provider = "Gmail", ProviderUserId = "u", EncryptedRefreshToken = "token" });
         await db.SaveChangesAsync();
 
-        var page = new EmailModel(db, new BuyerRuleService(), TestLocalizer.Shared);
+        var page = new EmailModel(db, new BuyerRuleService(), TestLocalizer.Shared, new ConfigurationBuilder().Build());
         await page.OnPostClearAuthAsync("card-4");
 
         var reloaded = await db.Buyers.SingleAsync(x => x.Id == buyer.Id);
@@ -148,7 +149,7 @@ public sealed class BuyerPageModelTests
         db.EmailAccounts.Add(new EmailAccount { BuyerId = buyer.Id, Email = "buyer@example.com", Provider = "Gmail", ProviderUserId = "u", EncryptedRefreshToken = "token" });
         await db.SaveChangesAsync();
 
-        var page = new EmailModel(db, new BuyerRuleService(), TestLocalizer.Shared);
+        var page = new EmailModel(db, new BuyerRuleService(), TestLocalizer.Shared, new ConfigurationBuilder().Build());
         await page.OnPostClearAuthAsync("card-5");
 
         Assert.Single(await db.EmailAccounts.Where(x => x.BuyerId == buyer.Id).ToListAsync());

@@ -118,6 +118,38 @@ else
                                 </form>
                             </div>
                         }
+                        @if (buyer.ReviewStatus == ReviewStatus.Approved)
+                        {
+                            var showReset = buyer.SupplierStatus != SupplierProcessingStatus.Unprocessed;
+                            var showFailed = buyer.SupplierStatus != SupplierProcessingStatus.Failed;
+                            var showCompleted = buyer.SupplierStatus != SupplierProcessingStatus.Completed;
+                            <div class="d-flex gap-2 flex-wrap mt-1">
+                                @if (showReset)
+                                {
+                                    <form method="post" asp-page-handler="SetStatus">
+                                        <input type="hidden" name="buyerId" value="@buyer.Id" />
+                                        <input type="hidden" name="status" value="@SupplierProcessingStatus.Unprocessed" />
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary">@L["Action.MarkUnprocessed"]</button>
+                                    </form>
+                                }
+                                @if (showFailed)
+                                {
+                                    <form method="post" asp-page-handler="SetStatus">
+                                        <input type="hidden" name="buyerId" value="@buyer.Id" />
+                                        <input type="hidden" name="status" value="@SupplierProcessingStatus.Failed" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">@L["Action.MarkFailed"]</button>
+                                    </form>
+                                }
+                                @if (showCompleted)
+                                {
+                                    <form method="post" asp-page-handler="SetStatus">
+                                        <input type="hidden" name="buyerId" value="@buyer.Id" />
+                                        <input type="hidden" name="status" value="@SupplierProcessingStatus.Completed" />
+                                        <button type="submit" class="btn btn-sm btn-outline-success">@L["Action.MarkCompleted"]</button>
+                                    </form>
+                                }
+                            </div>
+                        }
                         <form method="post" asp-page-handler="Delete" class="mt-1">
                             <input type="hidden" name="id" value="@buyer.Id" />
                             <button type="submit" class="btn btn-sm btn-outline-danger">@L["Common.Delete"]</button>

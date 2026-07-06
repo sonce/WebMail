@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using WebMail.Data;
 using WebMail.Domain;
+using WebMail.Services;
 using AdminBuyers = WebMail.Pages.Admin.BuyersModel;
 using Xunit;
 
@@ -271,9 +272,56 @@ public sealed class AdminBuyersModelTests
         Assert.Equal(string.Empty, view.DisplayName);
     }
 
+    [Fact]
+    public async Task SetStatusMovesApprovedBuyerToCompletedWithAudit()
+    {
+        await using var db = CreateDb();
+        var buyer = new Buyer { CardNo = "c1", Stage = BuyerStage.Submitted, ReviewStatus = ReviewStatus.Approved, EmailStatus = EmailAuthorizationStatus.Authorized };
+        db.Buyers.Add(buyer);
+        await db.SaveChangesAsync();
+
+        var model = CreateModel(db, adminId: 1);
+        await model.OnPostSetStatusAsync(buyer.Id, SupplierProcessingStatus.Completed);
+
+        Assert.Equal(SupplierProcessingStatus.Completed, (await db.Buyers.SingleAsync(x => x.Id == buyer.Id)).SupplierStatus);
+        var audit = Assert.Single(await db.AuditLogs.ToListAsync());
+        Assert.Equal("AdminSetStatus", audit.Action);
+    }
+
+    [Fact]
+    public async Task SetStatusIgnoredWhenNotApproved()
+    {
+        await using var db = CreateDb();
+        var buyer = new Buyer { CardNo = "c1", Stage = BuyerStage.Submitted, ReviewStatus = ReviewStatus.Pending };
+        db.Buyers.Add(buyer);
+        await db.SaveChangesAsync();
+
+        var model = CreateModel(db, adminId: 1);
+        await model.OnPostSetStatusAsync(buyer.Id, SupplierProcessingStatus.Completed);
+
+        Assert.Equal(SupplierProcessingStatus.Unprocessed, (await db.Buyers.SingleAsync(x => x.Id == buyer.Id)).SupplierStatus);
+        Assert.Empty(await db.AuditLogs.ToListAsync());
+    }
+
+    [Fact]
+    public async Task SetStatusRejectsInvalidStatus()
+    {
+        await using var db = CreateDb();
+        var buyer = new Buyer { CardNo = "c1", Stage = BuyerStage.Submitted, ReviewStatus = ReviewStatus.Approved };
+        db.Buyers.Add(buyer);
+        await db.SaveChangesAsync();
+
+        var model = CreateModel(db, adminId: 1);
+        await model.OnPostSetStatusAsync(buyer.Id, (SupplierProcessingStatus)999);
+
+        Assert.Equal(SupplierProcessingStatus.Unprocessed, (await db.Buyers.SingleAsync(x => x.Id == buyer.Id)).SupplierStatus);
+        Assert.Empty(await db.AuditLogs.ToListAsync());
+        Assert.NotNull(model.Message);
+    }
+
     private static AdminBuyers CreateModel(WebMailDbContext db, long adminId)
     {
-        var model = new AdminBuyers(db, TestLocalizer.Shared);
+        var model = new AdminBuyers(db, new BuyerReviewService(db), TestLocalizer.Shared);
         var httpContext = new DefaultHttpContext
         {
             User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, adminId.ToString())], "test"))

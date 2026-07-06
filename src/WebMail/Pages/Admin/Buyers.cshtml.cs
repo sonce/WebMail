@@ -126,6 +126,40 @@ public class BuyersModel : PageModel
         return Page();
     }
 
+    public async Task<IActionResult> OnPostSetStatusAsync(long buyerId, SupplierProcessingStatus status)
+    {
+        long.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var adminId);
+
+        if (status is not (SupplierProcessingStatus.Unprocessed or SupplierProcessingStatus.Failed or SupplierProcessingStatus.Completed))
+        {
+            Message = _loc["Supplier.InvalidStatus"];
+            await LoadAsync();
+            return Page();
+        }
+
+        // 与供应商一致：处理状态仅在审核通过后才有意义。管理员不要求邮箱已授权或已指派供应商。
+        var buyer = await _db.Buyers.FirstOrDefaultAsync(b => b.Id == buyerId && !b.IsDeleted);
+        if (buyer is not null && buyer.ReviewStatus == ReviewStatus.Approved)
+        {
+            buyer.SupplierStatus = status;
+            _db.AuditLogs.Add(new AuditLog
+            {
+                Action = "AdminSetStatus",
+                UserId = adminId == 0 ? null : adminId,
+                Details = $"buyer={buyerId};status={status}"
+            });
+            await _db.SaveChangesAsync();
+            Message = _loc["Supplier.StatusUpdated"];
+        }
+        else
+        {
+            Message = _loc["Supplier.StatusUpdateFailed"];
+        }
+
+        await LoadAsync();
+        return Page();
+    }
+
     private async Task<IActionResult> ReviewAsync(long id, ReviewStatus decision)
     {
         var buyer = await _db.Buyers.FirstOrDefaultAsync(b => b.Id == id && !b.IsDeleted);

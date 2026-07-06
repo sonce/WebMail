@@ -165,7 +165,7 @@ public sealed class OAuthCallbackModelTests
 
     private static CallbackModel CreateModel(WebMailDbContext db, IEmailProvider provider, FakeOAuthStateStore store)
     {
-        var model = new CallbackModel(db, new BuyerRuleService(), new EmailProviderResolver([provider]), TestLocalizer.Shared, store, new FakeTokenProtector());
+        var model = new CallbackModel(db, new BuyerRuleService(), new BuyerReviewService(db), new EmailProviderResolver([provider]), TestLocalizer.Shared, store, new FakeTokenProtector());
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext { Request = { Scheme = "https", Host = new HostString("localhost", 7121) } } };
         return model;
     }

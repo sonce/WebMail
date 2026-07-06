@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
 using WebMail;
 using WebMail.Data;
@@ -14,12 +15,14 @@ public class EmailModel : PageModel
     private readonly WebMailDbContext _db;
     private readonly BuyerRuleService _ruleService;
     private readonly IStringLocalizer<SharedResource> _loc;
+    private readonly IConfiguration _configuration;
 
-    public EmailModel(WebMailDbContext db, BuyerRuleService ruleService, IStringLocalizer<SharedResource> loc)
+    public EmailModel(WebMailDbContext db, BuyerRuleService ruleService, IStringLocalizer<SharedResource> loc, IConfiguration configuration)
     {
         _db = db;
         _ruleService = ruleService;
         _loc = loc;
+        _configuration = configuration;
     }
 
     public string? Card { get; private set; }
@@ -30,6 +33,10 @@ public class EmailModel : PageModel
     public SupplierProcessingStatus SupplierStatus { get; private set; }
     public BuyerMailAction Actions { get; private set; }
     public EmailAccount? EmailAccount { get; private set; }
+    // Google-only: deep link to the user's Google account connections page for this app, where they
+    // can revoke the OAuth grant on Google's side. Populated only when a Gmail account is bound and
+    // GoogleOAuth:RevokeUrl is configured.
+    public string? RevokeUrl { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(string card)
     {
@@ -135,6 +142,9 @@ public class EmailModel : PageModel
         SupplierStatus = buyer.SupplierStatus;
         Actions = _ruleService.ResolveBuyerMailAction(buyer);
         EmailAccount = account;
+        RevokeUrl = account is not null && string.Equals(account.Provider, "Gmail", StringComparison.OrdinalIgnoreCase)
+            ? _configuration["GoogleOAuth:RevokeUrl"]
+            : null;
         return Page();
     }
 }
