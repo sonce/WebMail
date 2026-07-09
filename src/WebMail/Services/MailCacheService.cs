@@ -30,15 +30,19 @@ public sealed partial class MailCacheService(
         var maxAgeSeconds = configuration.GetValue("MailSync:CacheMaxAgeSeconds", 600);
         var now = DateTimeOffset.UtcNow;
 
-        // 硬过期：超过最大存活时间的条目视为不存在并清除，避免长期故障时无限期返回旧数据。
-        if (_cache.TryGetValue(buyerId, out var entry) && (now - entry.FetchedAt).TotalSeconds >= maxAgeSeconds)
+        // 滑动过期：超过 maxAgeSeconds 未被访问或写入的条目才清除。访问/写入会续期，故
+        // 活跃轮询的邮箱缓存不会过期；停止访问满 maxAgeSeconds 后才失效。
+        if (_cache.TryGetValue(buyerId, out var entry) && (now - entry.LastAccessedAt).TotalSeconds >= maxAgeSeconds)
         {
             _cache.TryRemove(buyerId, out _);
             entry = null;
         }
 
+        // 软刷新窗口内：直接返回缓存并滑动续期。仅续「最后访问」时间，不影响按真实抓取时间
+        // 计算的新鲜度，因此持续轮询仍会每 ttlSeconds 重取一次。
         if (!force && entry is not null && (now - entry.FetchedAt).TotalSeconds < ttlSeconds)
         {
+            Touch(buyerId, entry, now);
             return new MailCacheResult(entry.Messages, Stale: false, Error: null);
         }
 
@@ -46,7 +50,7 @@ public sealed partial class MailCacheService(
         {
             var fetched = await FetchAsync(buyerId, cancellationToken);
             var views = ProjectLatest(fetched);
-            _cache[buyerId] = new CacheEntry(views, now);
+            _cache[buyerId] = new CacheEntry(views, now, now); // 写入即续期
             return new MailCacheResult(views, Stale: false, Error: null);
         }
         catch (AccountNotFoundException)
@@ -56,7 +60,7 @@ public sealed partial class MailCacheService(
         catch (ProviderAuthorizationException)
         {
             await MarkBuyerAbnormalAsync(buyerId, cancellationToken);
-            return Degraded(buyerId, "邮件刷新失败，且无历史数据");
+            return Degraded(buyerId, "邮件刷新失败，且无历史数据", now);
         }
         catch (OperationCanceledException)
         {
@@ -64,17 +68,25 @@ public sealed partial class MailCacheService(
         }
         catch
         {
-            return Degraded(buyerId, "邮件刷新失败，以下为上次结果");
+            return Degraded(buyerId, "邮件刷新失败，以下为上次结果", now);
         }
     }
 
-    private MailCacheResult Degraded(long buyerId, string emptyError)
+    private MailCacheResult Degraded(long buyerId, string emptyError, DateTimeOffset now)
     {
         if (_cache.TryGetValue(buyerId, out var stale) && stale.Messages.Count > 0)
         {
+            // 降级读取也算访问，滑动续期：活跃轮询期间持续返回上次结果，停止访问后才过期。
+            Touch(buyerId, stale, now);
             return new MailCacheResult(stale.Messages, Stale: true, Error: "邮件刷新失败，以下为上次结果");
         }
         return new MailCacheResult(Array.Empty<MailMessageView>(), Stale: false, Error: emptyError);
+    }
+
+    // 滑动续期：仅当条目未被并发抓取替换时更新「最后访问」时间，避免用旧消息覆盖新结果。
+    private void Touch(long buyerId, CacheEntry entry, DateTimeOffset now)
+    {
+        _cache.TryUpdate(buyerId, entry with { LastAccessedAt = now }, entry);
     }
 
     private async Task<IReadOnlyList<ProviderMessage>> FetchAsync(long buyerId, CancellationToken cancellationToken)
@@ -125,7 +137,7 @@ public sealed partial class MailCacheService(
                 m.HtmlBody))
             .ToList();
 
-    private sealed record CacheEntry(IReadOnlyList<MailMessageView> Messages, DateTimeOffset FetchedAt);
+    private sealed record CacheEntry(IReadOnlyList<MailMessageView> Messages, DateTimeOffset FetchedAt, DateTimeOffset LastAccessedAt);
 }
 
 internal sealed class AccountNotFoundException(long buyerId) : Exception($"No email account for buyer {buyerId}.");
