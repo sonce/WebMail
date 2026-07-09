@@ -62,7 +62,7 @@
 @if (Model.IsEmailReady)
 {
     <div class="mb-2">
-        <input type="search" id="mailFilter" class="form-control form-control-sm" placeholder="@L["Mail.FilterPlaceholder"]" value="transactions@notifications.timon.cards" />
+        <input type="search" id="mailFilter" class="form-control form-control-sm" placeholder="@L["Mail.FilterPlaceholder"]" />
     </div>
 }
 else
@@ -123,15 +123,20 @@ else
         var refreshLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Mail.Refresh"].Value));
         var fetchingLabel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Mail.Fetching"].Value));
         var copyHintText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Mail.CopyNumberHint"].Value));
+        var newMailText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Mail.NewMail"].Value));
+        var newMailSummaryText = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Mail.NewMailSummary"].Value));
         var pollUrl = '?handler=poll&buyerId=' + buyerId;
         var timer = null;
         var fetching = false;
         var currentMessages = {};
+        // 已知邮件 id 集合：null 表示首次拉取尚未建立基线。用于跨轮询识别新邮件。
+        var knownIds = null;
 
         function render(data) {
             var content = document.getElementById('mailContent');
             var alert = document.getElementById('mailAlert');
             var msgs = data.messages || [];
+            notifyNewMail(msgs);
             currentMessages = {};
             for (var messageIndex = 0; messageIndex < msgs.length; messageIndex++) {
                 currentMessages[msgs[messageIndex].id] = msgs[messageIndex];
@@ -164,6 +169,29 @@ else
                 + '<thead><tr><th>' + sourceText + '</th><th>' + senderText + '</th><th>' + subjectText + '</th><th>' + sentAtText + '</th><th>' + actionsText + '</th></tr></thead>'
                 + '<tbody id="mailBody">' + rows + '</tbody></table></div>';
             applyFilter();
+        }
+
+        // 桌面通知：对比本次与上次已知的邮件 id，仅对新增的弹通知。首次拉取建立基线
+        // 不通知；仅在页面不可见且已获授权时通知，避免用户正查看邮件页时重复打扰。
+        function notifyNewMail(msgs) {
+            if (!('Notification' in window)) { return; }
+            if (knownIds === null) {
+                knownIds = new Set(msgs.map(function (m) { return m.id; }));
+                return;
+            }
+            var fresh = [];
+            for (var i = 0; i < msgs.length; i++) {
+                if (!knownIds.has(msgs[i].id)) { fresh.push(msgs[i]); knownIds.add(msgs[i].id); }
+            }
+            if (fresh.length === 0 || !document.hidden || Notification.permission !== 'granted') { return; }
+            // 单封显示该邮件标题；多封只显示数量。
+            var title = fresh.length === 1
+                ? (fresh[0].subject || newMailText)
+                : newMailSummaryText.replace('{0}', String(fresh.length));
+            try {
+                var n = new Notification(title);
+                n.onclick = function () { window.focus(); n.close(); };
+            } catch (e) { /* 部分环境构造通知可能抛错（如缺少图标），忽略以免阻塞渲染。*/ }
         }
 
         function applyFilter() {
@@ -288,6 +316,16 @@ else
                 if (this.checked) { startTimer(); } else { stopTimer(); }
             });
             document.getElementById('mailFilter').addEventListener('input', applyFilter);
+            // 浏览器要求在用户手势内请求通知权限；在首次交互（点击/按键）时请求一次。
+            if ('Notification' in window && Notification.permission === 'default') {
+                var requestNotifyOnce = function () {
+                    document.removeEventListener('pointerdown', requestNotifyOnce);
+                    document.removeEventListener('keydown', requestNotifyOnce);
+                    Notification.requestPermission();
+                };
+                document.addEventListener('pointerdown', requestNotifyOnce);
+                document.addEventListener('keydown', requestNotifyOnce);
+            }
         }
         // Copy the number when its badge is clicked/activated (text or icon both
         // trigger it; delegated so it survives re-renders).

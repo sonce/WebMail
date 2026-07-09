@@ -207,4 +207,6 @@
   <data name="Action.View" xml:space="preserve"><value>查看</value></data>
   <data name="Mail.ContentTitle" xml:space="preserve"><value>邮件内容</value></data>
   <data name="Mail.EmptyBody" xml:space="preserve"><value>该邮件没有可显示的正文。</value></data>
+  <data name="Mail.NewMail" xml:space="preserve"><value>新邮件</value></data>
+  <data name="Mail.NewMailSummary" xml:space="preserve"><value>收到 {0} 封新邮件</value></data>
 </root>

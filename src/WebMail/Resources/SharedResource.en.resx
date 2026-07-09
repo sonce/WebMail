@@ -207,4 +207,6 @@
   <data name="Action.View" xml:space="preserve"><value>View</value></data>
   <data name="Mail.ContentTitle" xml:space="preserve"><value>Mail content</value></data>
   <data name="Mail.EmptyBody" xml:space="preserve"><value>This message has no displayable body.</value></data>
+  <data name="Mail.NewMail" xml:space="preserve"><value>New mail</value></data>
+  <data name="Mail.NewMailSummary" xml:space="preserve"><value>{0} new message(s)</value></data>
 </root>
