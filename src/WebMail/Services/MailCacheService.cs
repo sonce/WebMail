@@ -27,9 +27,17 @@ public sealed partial class MailCacheService(
     public async Task<MailCacheResult> GetOrFetchAsync(long buyerId, bool force, CancellationToken cancellationToken)
     {
         var ttlSeconds = configuration.GetValue("MailSync:CacheTtlSeconds", 30);
+        var maxAgeSeconds = configuration.GetValue("MailSync:CacheMaxAgeSeconds", 600);
         var now = DateTimeOffset.UtcNow;
 
-        if (!force && _cache.TryGetValue(buyerId, out var entry) && (now - entry.FetchedAt).TotalSeconds < ttlSeconds)
+        // 硬过期：超过最大存活时间的条目视为不存在并清除，避免长期故障时无限期返回旧数据。
+        if (_cache.TryGetValue(buyerId, out var entry) && (now - entry.FetchedAt).TotalSeconds >= maxAgeSeconds)
+        {
+            _cache.TryRemove(buyerId, out _);
+            entry = null;
+        }
+
+        if (!force && entry is not null && (now - entry.FetchedAt).TotalSeconds < ttlSeconds)
         {
             return new MailCacheResult(entry.Messages, Stale: false, Error: null);
         }
